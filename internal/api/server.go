@@ -203,19 +203,19 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		//session, err := s.storeSession.Get(r, sessionName)
-		//if err != nil {
-		//	s.log.Error(err)
-		//	return
-		//}
-		//
-		//s.log.Error(session.Values)
-		//
-		//_, ok := session.Values["user_id"]
-		//if !ok {
-		//	s.log.Error("Unauthorized")
-		//	return
-		//}
+		session, err := s.storeSession.Get(r, sessionName)
+		if err != nil {
+			s.log.Error(err)
+			return
+		}
+
+		s.log.Error(session.Values)
+
+		_, ok := session.Values["user_id"]
+		if !ok {
+			s.log.Error("Unauthorized")
+			return
+		}
 
 		fmt.Print("auth")
 		next.ServeHTTP(w, r)
