@@ -26,11 +26,10 @@ func (r *User) Create(user *model.User, db *database.DB) error {
 		user.Login,
 		user.Password,
 		timeNow,
-		timeNow,
 	).Scan(&user.ID)
 }
 
-func (r *User) FindByID(id int, db database.DB) (*model.User, error) {
+func (r *User) FindByID(id interface{}, db *database.DB) (*model.User, error) {
 
 	user := &model.User{}
 
@@ -39,7 +38,6 @@ func (r *User) FindByID(id int, db database.DB) (*model.User, error) {
 		&user.Login,
 		&user.Password,
 		&user.CreatedAt,
-		&user.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
@@ -56,7 +54,6 @@ func (r *User) FindByLogin(login string, db *database.DB) (*model.User, error) {
 		&user.Login,
 		&user.Password,
 		&user.CreatedAt,
-		&user.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}

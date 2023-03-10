@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
@@ -14,6 +15,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -107,9 +109,6 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) { //curl -
 		return
 	}
 
-	p, _ := s.storeSession.Get(r, sessionName)
-
-	s.log.Error(p.Values)
 }
 
 func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
@@ -149,11 +148,19 @@ func (s *server) postOrdersHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	OrderNumber, _ := strconv.Atoi(string(resp))
+	OrderNumber, err := strconv.Atoi(strings.TrimSpace(string(resp)))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	timeNow := time.Now()
+	user := r.Context().Value("ctxUser").(*model.User)
+
+	s.log.Info(user)
 
 	order := &model.Order{
-		UserID:      1,
+		UserID:      user.ID,
 		OrderNumber: OrderNumber,
 		Status:      "STATUS",
 		Accrual:     123,
@@ -161,6 +168,8 @@ func (s *server) postOrdersHandler(w http.ResponseWriter, r *http.Request) {
 		CreatedAt:   timeNow,
 		UploadedAt:  timeNow,
 	}
+
+	s.log.Info(order)
 
 	o, _ := s.orderRepository.FindByID(order.ID, s.db)
 	if o == nil {
@@ -174,17 +183,12 @@ func (s *server) postOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
-	resp, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	user := r.Context().Value("ctxUser").(*model.User)
 
-	UserID, _ := strconv.Atoi(string(resp))
-
-	o, _ := s.orderRepository.GetOrders(UserID, s.db)
+	o, _ := s.orderRepository.GetOrders(user.ID, s.db)
 
 	fmt.Print(o)
+
 }
 
 func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
@@ -209,15 +213,21 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		s.log.Error(session.Values)
-
-		_, ok := session.Values["user_id"]
-		if !ok {
+		id, auth := session.Values["user_id"]
+		if !auth {
 			s.log.Error("Unauthorized")
 			return
 		}
 
-		fmt.Print("auth")
-		next.ServeHTTP(w, r)
+		u, _ := s.userRepository.FindByID(id, s.db)
+		if u == nil {
+			s.log.Error("User not find")
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "ctxUser", u)
+
+		s.log.Info("User authorized")
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

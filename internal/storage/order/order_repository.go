@@ -1,6 +1,7 @@
 package order
 
 import (
+	"fmt"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
 )
@@ -17,14 +18,13 @@ type Order struct {
 func (o *Order) Create(order *model.Order, db *database.DB) error {
 
 	return db.Pool.QueryRow(
-		"INSERT INTO orders (user_id, order_number, status, accrual, uploaded_at, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id",
+		"INSERT INTO orders (user_id, order_number, status, accrual, uploaded_at, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
 		order.UserID,
 		order.OrderNumber,
 		order.Status,
 		order.Accrual,
-		order.UploadedAt,
 		order.CreatedAt,
-		order.UpdatedAt,
+		order.UploadedAt,
 	).Scan(&order.ID)
 }
 
@@ -38,30 +38,37 @@ func (o *Order) FindByID(id int, db *database.DB) (*model.Order, error) {
 		&order.Status,
 		&order.Accrual,
 		&order.CreatedAt,
-		&order.UpdatedAt,
 		&order.UploadedAt,
 	); err != nil {
 		return nil, err
 	}
-
 	return order, nil
 }
 
-func (o *Order) GetOrders(user_id int, db *database.DB) (*model.Order, error) {
+func (o *Order) GetOrders(userId int, db *database.DB) ([]model.Order, error) {
 
-	order := &model.Order{}
+	var orders []model.Order
+	var order model.Order
 
-	if err := db.Pool.QueryRow("SELECT * FROM orders where user_id=$1", user_id).Scan(
-		&order.UserID,
-		&order.OrderNumber,
-		&order.Status,
-		&order.Accrual,
-		&order.CreatedAt,
-		&order.UpdatedAt,
-		&order.UploadedAt,
-	); err != nil {
-		return nil, err
+	fmt.Print(userId)
+
+	query := "SELECT * FROM orders"
+
+	rows, err := db.Pool.Query(query)
+
+	if err != nil {
+		return orders, nil
 	}
 
-	return order, nil
+	for rows.Next() {
+		if err = rows.Scan(&order.ID, &order.UserID, &order.OrderNumber, &order.Status,
+			&order.Accrual, &order.CreatedAt, &order.UploadedAt,
+		); err != nil {
+			return orders, err
+		}
+
+		orders = append(orders, order)
+	}
+
+	return orders, nil
 }
