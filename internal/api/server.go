@@ -22,7 +22,8 @@ import (
 type ServerHandlers interface {
 	loginHandler(w http.ResponseWriter, r *http.Request)
 	registerHandler(w http.ResponseWriter, r *http.Request)
-	postOrdersHandler(w http.ResponseWriter, r *http.Request)
+	postOrderHandler(w http.ResponseWriter, r *http.Request)
+	getOrderHandler(w http.ResponseWriter, r *http.Request)
 	getOrdersHandler(w http.ResponseWriter, r *http.Request)
 	getBalanceHandler(w http.ResponseWriter, r *http.Request)
 	postWithdrawHandler(w http.ResponseWriter, r *http.Request)
@@ -63,8 +64,9 @@ func (s *server) Route() *chi.Mux {
 		r.Post("/login", s.loginHandler)
 		r.Group(func(r chi.Router) {
 			r.Use(s.authMiddleware)
-			r.Post("/orders", s.postOrdersHandler)
+			r.Post("/orders", s.postOrderHandler)
 			r.Get("/orders", s.getOrdersHandler)
+			r.Get("/orders/{id}", s.getOrderHandler)
 			r.Get("/balance", s.getBalanceHandler)
 			r.Post("/balance/withdraw", s.getBalanceHandler)
 			r.Get("/withdrawals", s.postWithdrawHandler)
@@ -140,7 +142,7 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (s *server) postOrdersHandler(w http.ResponseWriter, r *http.Request) {
+func (s *server) postOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -230,4 +232,8 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 		s.log.Info("User authorized")
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func (s *server) getOrderHandler(w http.ResponseWriter, r *http.Request) {
+
 }

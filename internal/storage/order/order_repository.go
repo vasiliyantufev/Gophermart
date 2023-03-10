@@ -18,7 +18,7 @@ type Order struct {
 func (o *Order) Create(order *model.Order, db *database.DB) error {
 
 	return db.Pool.QueryRow(
-		"INSERT INTO orders (user_id, order_number, status, accrual, uploaded_at, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
+		"INSERT INTO orders (user_id, order_number, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
 		order.UserID,
 		order.OrderNumber,
 		order.Status,
