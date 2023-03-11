@@ -3,7 +3,6 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/vasiliyantufev/gophermart/internal/storage"
 	"github.com/vasiliyantufev/gophermart/internal/storage/token"
 	"io"
@@ -187,13 +186,21 @@ func (s *server) postOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.log.Error(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	OrderID, err := strconv.Atoi(strings.TrimSpace(string(resp)))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		s.log.Error(err)
+		http.Error(w, "Invalid request format", http.StatusBadRequest)
+		return
+	}
+
+	if validOrder := service.ValidLuhn(OrderID); validOrder == false {
+		s.log.Error("Invalid order number format")
+		http.Error(w, "invalid order number format", http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -208,18 +215,27 @@ func (s *server) postOrderHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:     timeNow,
 	}
 
-	s.log.Info(order)
-
-	o, _ := s.orderRepository.FindByID(order.ID, s.db)
+	o, _ := s.orderRepository.FindByLoginAndID(order.ID, user)
 	if o == nil {
-		s.log.Error("Order already created")
+		s.log.Error("Order number has already been uploaded by this user")
+		http.Error(w, "Order number has already been uploaded by this user", http.StatusOK)
 		return
 	}
-	err = s.orderRepository.Create(order, s.db)
+	o, _ = s.orderRepository.FindByID(order.ID)
+	if o == nil {
+		s.log.Error("Order number has already been uploaded by another user")
+		http.Error(w, "Order number has already been uploaded by another user", http.StatusConflict)
+		return
+	}
+	err = s.orderRepository.Create(order)
 	if err != nil {
 		s.log.Error(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+
+	s.log.Info("New order number accepted for processing")
+	http.Error(w, "New order number accepted for processing", http.StatusAccepted)
 }
 
 func (s *server) getOrderHandler(w http.ResponseWriter, r *http.Request) {
@@ -230,9 +246,14 @@ func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("ctxUser").(*model.User)
 
-	o, _ := s.orderRepository.GetOrders(user.ID, s.db)
+	o, _ := s.orderRepository.GetOrders(user.ID)
+	if o == nil {
+		s.log.Error("No data to answer")
+		http.Error(w, "No data to answer", http.StatusNoContent)
+	}
 
-	fmt.Print(o)
+	s.log.Error("Successful request processing")
+	http.Error(w, "Successful request processing", http.StatusOK)
 
 }
 
@@ -254,19 +275,23 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 
 		session, err := s.storeSession.Get(r, sessionName)
 		if err != nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			s.log.Error(err)
 			return
 		}
 
 		id, auth := session.Values["user_id"]
 		if !auth {
-			s.log.Error("Unauthorized")
+			s.log.Error(err)
+			http.Error(w, "User not authenticated", http.StatusUnauthorized)
+			s.log.Error("User not authenticated")
 			return
 		}
-		s.log.Info("User authorized")
+		s.log.Info("User authenticated")
 
 		u, _ := s.userRepository.FindByID(id)
 		if u == nil {
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			s.log.Error("User not find")
 			return
 		}

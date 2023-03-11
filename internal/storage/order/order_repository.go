@@ -22,9 +22,9 @@ func New(db *database.DB) *Order {
 	}
 }
 
-func (o *Order) Create(order *model.Order, db *database.DB) error {
+func (o *Order) Create(order *model.Order) error {
 
-	return db.Pool.QueryRow(
+	return o.db.Pool.QueryRow(
 		"INSERT INTO orders (user_id, order_id, current_status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5) RETURNING id",
 		order.UserID,
 		order.OrderID,
@@ -34,11 +34,11 @@ func (o *Order) Create(order *model.Order, db *database.DB) error {
 	).Scan(&order.ID)
 }
 
-func (o *Order) FindByID(id int, db *database.DB) (*model.Order, error) {
+func (o *Order) FindByLoginAndID(id int, user *model.User) (*model.Order, error) {
 
 	order := &model.Order{}
 
-	if err := db.Pool.QueryRow("SELECT * FROM orders where id=$1", id).Scan(
+	if err := o.db.Pool.QueryRow("SELECT * FROM orders where id=$1 and login=$2", id, user.Login).Scan(
 		&order.UserID,
 		&order.OrderID,
 		&order.CurrentStatus,
@@ -50,7 +50,23 @@ func (o *Order) FindByID(id int, db *database.DB) (*model.Order, error) {
 	return order, nil
 }
 
-func (o *Order) GetOrders(userId int, db *database.DB) ([]model.Order, error) {
+func (o *Order) FindByID(id int) (*model.Order, error) {
+
+	order := &model.Order{}
+
+	if err := o.db.Pool.QueryRow("SELECT * FROM orders where id=$1", id).Scan(
+		&order.UserID,
+		&order.OrderID,
+		&order.CurrentStatus,
+		&order.CreatedAt,
+		&order.UpdatedAt,
+	); err != nil {
+		return nil, err
+	}
+	return order, nil
+}
+
+func (o *Order) GetOrders(userId int) ([]model.Order, error) {
 
 	var orders []model.Order
 	var order model.Order
@@ -59,7 +75,7 @@ func (o *Order) GetOrders(userId int, db *database.DB) ([]model.Order, error) {
 
 	query := "SELECT * FROM orders"
 
-	rows, err := db.Pool.Query(query)
+	rows, err := o.db.Pool.Query(query)
 
 	if err != nil {
 		return orders, nil
