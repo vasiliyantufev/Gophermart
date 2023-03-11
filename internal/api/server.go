@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/vasiliyantufev/gophermart/internal/storage"
+	"github.com/vasiliyantufev/gophermart/internal/storage/token"
 	"io"
 	"net/http"
 	"strconv"
@@ -45,6 +46,7 @@ type server struct {
 	userRepository    *user.User
 	orderRepository   *order.Order
 	balanceRepository *balance.Balance
+	tokenRepository   *token.Token
 	handlers          ServerHandlers
 	storeSession      sessions.Store
 }
@@ -58,6 +60,7 @@ func (s *server) StartServer(r *chi.Mux, cfg *config.Config, log *logrus.Logger)
 	s.userRepository = user.New(s.db)
 	s.orderRepository = order.New(s.db)
 	s.balanceRepository = balance.New(s.db)
+	s.tokenRepository = token.New(s.db)
 
 	log.Infof("Starting application %v\n", cfg.Address)
 	if con := http.ListenAndServe(cfg.Address, r); con != nil {

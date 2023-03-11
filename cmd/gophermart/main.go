@@ -18,8 +18,6 @@ func main() {
 	db, _ := database.New(cfg)
 	defer db.Close()
 
-	//db.Ping()
-
 	log := logrus.New()
 	log.SetLevel(cfg.DebugLevel)
 
