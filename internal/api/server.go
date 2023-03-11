@@ -98,6 +98,7 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) { //curl -
 	req := &request{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		s.log.Error(err)
+		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		return
 	}
 
@@ -106,28 +107,36 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) { //curl -
 		Password: req.Password,
 	}
 
-	u, _ := s.userRepository.FindByLogin(user.Login)
-	if u == nil {
-		s.log.Error("User no find")
+	u, err := s.userRepository.FindByLogin(user.Login)
+	if err != nil {
+		s.log.Error("Invalid username")
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	if service.CheckPasswordHash(req.Password, u.Password) {
-		s.log.Error("Wrong password")
+		s.log.Error("Invalid username/password")
+		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
 	session, err := s.storeSession.Get(r, sessionName)
 	if err != nil {
 		s.log.Error(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
 	session.Values["user_id"] = u.ID
 	if err := s.storeSession.Save(r, w, session); err != nil {
 		s.log.Error(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+
+	s.log.Info("Successful login")
+	http.Error(w, "Successful login", http.StatusOK)
+
 }
 
 func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
@@ -140,12 +149,14 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 	req := &request{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		s.log.Error(err)
+		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		return
 	}
 
 	password, err := service.HashPassword(req.Password)
 	if err != nil {
 		s.log.Error(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
@@ -154,15 +165,22 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 		Password: password,
 	}
 
-	u, _ := s.userRepository.FindByLogin(user.Login)
-	if u == nil {
-		err := s.userRepository.Create(user)
-		if err != nil {
-			s.log.Error(err)
-			return
-		}
+	u, err := s.userRepository.FindByLogin(user.Login)
+	if u != nil {
+		s.log.Error("Login is already taken")
+		http.Error(w, "Login is already taken", http.StatusConflict)
+		return
 	}
 
+	err = s.userRepository.Create(user)
+	if err != nil {
+		s.log.Error(err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	s.log.Info("Successful registration")
+	http.Error(w, "Successful registration", http.StatusOK)
 }
 
 func (s *server) postOrderHandler(w http.ResponseWriter, r *http.Request) {
@@ -173,7 +191,7 @@ func (s *server) postOrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	OrderNumber, err := strconv.Atoi(strings.TrimSpace(string(resp)))
+	OrderID, err := strconv.Atoi(strings.TrimSpace(string(resp)))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -182,11 +200,9 @@ func (s *server) postOrderHandler(w http.ResponseWriter, r *http.Request) {
 	timeNow := time.Now()
 	user := r.Context().Value("ctxUser").(*model.User)
 
-	s.log.Info(user)
-
 	order := &model.Order{
 		UserID:        user.ID,
-		OrderID:       OrderNumber,
+		OrderID:       OrderID,
 		CurrentStatus: storage.Statuses(0),
 		CreatedAt:     timeNow,
 		UpdatedAt:     timeNow,
@@ -196,11 +212,13 @@ func (s *server) postOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 	o, _ := s.orderRepository.FindByID(order.ID, s.db)
 	if o == nil {
-		err := s.orderRepository.Create(order, s.db)
-		if err != nil {
-			s.log.Error(err)
-			return
-		}
+		s.log.Error("Order already created")
+		return
+	}
+	err = s.orderRepository.Create(order, s.db)
+	if err != nil {
+		s.log.Error(err)
+		return
 	}
 }
 
@@ -245,6 +263,7 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 			s.log.Error("Unauthorized")
 			return
 		}
+		s.log.Info("User authorized")
 
 		u, _ := s.userRepository.FindByID(id)
 		if u == nil {
@@ -254,7 +273,6 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 
 		ctx := context.WithValue(r.Context(), "ctxUser", u)
 
-		s.log.Info("User authorized")
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
