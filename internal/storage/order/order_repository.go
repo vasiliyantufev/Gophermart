@@ -25,13 +25,12 @@ func New(db *database.DB) *Order {
 func (o *Order) Create(order *model.Order, db *database.DB) error {
 
 	return db.Pool.QueryRow(
-		"INSERT INTO orders (user_id, order_number, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
+		"INSERT INTO orders (user_id, order_id, current_status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5) RETURNING id",
 		order.UserID,
-		order.OrderNumber,
-		order.Status,
-		order.Accrual,
+		order.OrderID,
+		order.CurrentStatus,
 		order.CreatedAt,
-		order.UploadedAt,
+		order.CreatedAt,
 	).Scan(&order.ID)
 }
 
@@ -41,11 +40,10 @@ func (o *Order) FindByID(id int, db *database.DB) (*model.Order, error) {
 
 	if err := db.Pool.QueryRow("SELECT * FROM orders where id=$1", id).Scan(
 		&order.UserID,
-		&order.OrderNumber,
-		&order.Status,
-		&order.Accrual,
+		&order.OrderID,
+		&order.CurrentStatus,
 		&order.CreatedAt,
-		&order.UploadedAt,
+		&order.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}
@@ -68,8 +66,8 @@ func (o *Order) GetOrders(userId int, db *database.DB) ([]model.Order, error) {
 	}
 
 	for rows.Next() {
-		if err = rows.Scan(&order.ID, &order.UserID, &order.OrderNumber, &order.Status,
-			&order.Accrual, &order.CreatedAt, &order.UploadedAt,
+		if err = rows.Scan(&order.ID, &order.UserID, &order.OrderID, &order.CurrentStatus,
+			&order.CreatedAt, &order.UpdatedAt,
 		); err != nil {
 			return orders, err
 		}
