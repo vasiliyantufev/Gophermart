@@ -4,19 +4,24 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/sessions"
-	"github.com/sirupsen/logrus"
-	"github.com/vasiliyantufev/gophermart/internal/config"
-	database "github.com/vasiliyantufev/gophermart/internal/db"
-	"github.com/vasiliyantufev/gophermart/internal/model"
-	"github.com/vasiliyantufev/gophermart/internal/storage/order"
-	"github.com/vasiliyantufev/gophermart/internal/storage/user"
+	"github.com/vasiliyantufev/gophermart/internal/storage"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/sessions"
+	"github.com/sirupsen/logrus"
+
+	"github.com/vasiliyantufev/gophermart/internal/config"
+	database "github.com/vasiliyantufev/gophermart/internal/db"
+	"github.com/vasiliyantufev/gophermart/internal/model"
+	"github.com/vasiliyantufev/gophermart/internal/service"
+	"github.com/vasiliyantufev/gophermart/internal/storage/balance"
+	"github.com/vasiliyantufev/gophermart/internal/storage/order"
+	"github.com/vasiliyantufev/gophermart/internal/storage/user"
 )
 
 type ServerHandlers interface {
@@ -34,13 +39,14 @@ type ServerHandlers interface {
 const sessionName = "gophermart"
 
 type server struct {
-	log             logrus.Logger
-	cfg             *config.Config
-	db              *database.DB
-	userRepository  user.User
-	orderRepository order.Order
-	handlers        ServerHandlers
-	storeSession    sessions.Store
+	log               logrus.Logger
+	cfg               *config.Config
+	db                *database.DB
+	userRepository    *user.User
+	orderRepository   *order.Order
+	balanceRepository *balance.Balance
+	handlers          ServerHandlers
+	storeSession      sessions.Store
 }
 
 func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB, storeSession *sessions.CookieStore) *server {
@@ -48,6 +54,10 @@ func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB, store
 }
 
 func (s *server) StartServer(r *chi.Mux, cfg *config.Config, log *logrus.Logger) {
+
+	s.userRepository = user.New(s.db)
+	s.orderRepository = order.New(s.db)
+	s.balanceRepository = balance.New(s.db)
 
 	log.Infof("Starting application %v\n", cfg.Address)
 	if con := http.ListenAndServe(cfg.Address, r); con != nil {
@@ -93,9 +103,14 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) { //curl -
 		Password: req.Password,
 	}
 
-	u, _ := s.userRepository.FindByLogin(user.Login, s.db)
+	u, _ := s.userRepository.FindByLogin(user.Login)
 	if u == nil {
 		s.log.Error("User no find")
+		return
+	}
+
+	if service.CheckPasswordHash(req.Password, u.Password) {
+		s.log.Error("Wrong password")
 		return
 	}
 
@@ -110,7 +125,6 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) { //curl -
 		s.log.Error(err)
 		return
 	}
-
 }
 
 func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
@@ -126,14 +140,20 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := &model.User{
-		Login:    req.Login,
-		Password: req.Password,
+	password, err := service.HashPassword(req.Password)
+	if err != nil {
+		s.log.Error(err)
+		return
 	}
 
-	u, _ := s.userRepository.FindByLogin(user.Login, s.db)
+	user := &model.User{
+		Login:    req.Login,
+		Password: password,
+	}
+
+	u, _ := s.userRepository.FindByLogin(user.Login)
 	if u == nil {
-		err := s.userRepository.Create(user, s.db)
+		err := s.userRepository.Create(user)
 		if err != nil {
 			s.log.Error(err)
 			return
@@ -162,13 +182,11 @@ func (s *server) postOrderHandler(w http.ResponseWriter, r *http.Request) {
 	s.log.Info(user)
 
 	order := &model.Order{
-		UserID:      user.ID,
-		OrderNumber: OrderNumber,
-		Status:      "STATUS",
-		Accrual:     123,
-		UpdatedAt:   timeNow,
-		CreatedAt:   timeNow,
-		UploadedAt:  timeNow,
+		UserID:        user.ID,
+		OrderID:       OrderNumber,
+		CurrentStatus: storage.Statuses(0),
+		CreatedAt:     timeNow,
+		UpdatedAt:     timeNow,
 	}
 
 	s.log.Info(order)
@@ -181,6 +199,10 @@ func (s *server) postOrderHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func (s *server) getOrderHandler(w http.ResponseWriter, r *http.Request) {
+
 }
 
 func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
@@ -221,7 +243,7 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		u, _ := s.userRepository.FindByID(id, s.db)
+		u, _ := s.userRepository.FindByID(id)
 		if u == nil {
 			s.log.Error("User not find")
 			return
@@ -232,8 +254,4 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 		s.log.Info("User authorized")
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-func (s *server) getOrderHandler(w http.ResponseWriter, r *http.Request) {
-
 }

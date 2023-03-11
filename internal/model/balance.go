@@ -5,7 +5,7 @@ import "time"
 type Balance struct {
 	ID        int       `json:"id"`
 	UserID    int       `json:"user_id"`
-	Debit     float64   `json:"debit"`
-	Credit    float64   `json:"credit"`
+	OrderID   int       `json:"order_id"`
+	Delta     float64   `json:"delta"`
 	CreatedAt time.Time `json:"created_at"`
 }

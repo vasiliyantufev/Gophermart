@@ -16,6 +16,7 @@ func main() {
 	store := sessions.NewCookieStore([]byte(cfg.SessionKey))
 
 	db, _ := database.New(cfg)
+	defer db.Close()
 
 	//db.Ping()
 

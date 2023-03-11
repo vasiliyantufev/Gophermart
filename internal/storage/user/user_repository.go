@@ -14,26 +14,32 @@ type UserRepository interface {
 
 type User struct {
 	userRepository *UserRepository
+	db             *database.DB
 }
 
-/*, db database.DB*/
-func (r *User) Create(user *model.User, db *database.DB) error {
+func New(db *database.DB) *User {
+	return &User{
+		db: db,
+	}
+}
+
+func (u *User) Create(user *model.User) error {
 
 	timeNow := time.Now()
 
-	return db.Pool.QueryRow(
-		"INSERT INTO users (login, password, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id",
+	return u.db.Pool.QueryRow(
+		"INSERT INTO users (login, password, created_at) VALUES ($1, $2, $3) RETURNING id",
 		user.Login,
 		user.Password,
 		timeNow,
 	).Scan(&user.ID)
 }
 
-func (r *User) FindByID(id interface{}, db *database.DB) (*model.User, error) {
+func (u *User) FindByID(id interface{}) (*model.User, error) {
 
 	user := &model.User{}
 
-	if err := db.Pool.QueryRow("SELECT * FROM users where id=$1", id).Scan(
+	if err := u.db.Pool.QueryRow("SELECT * FROM users where id=$1", id).Scan(
 		&user.ID,
 		&user.Login,
 		&user.Password,
@@ -45,11 +51,11 @@ func (r *User) FindByID(id interface{}, db *database.DB) (*model.User, error) {
 	return user, nil
 }
 
-func (r *User) FindByLogin(login string, db *database.DB) (*model.User, error) {
+func (u *User) FindByLogin(login string) (*model.User, error) {
 
 	user := &model.User{}
 
-	if err := db.Pool.QueryRow("SELECT * FROM users where login=$1", login).Scan(
+	if err := u.db.Pool.QueryRow("SELECT * FROM users where login=$1", login).Scan(
 		&user.ID,
 		&user.Login,
 		&user.Password,

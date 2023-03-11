@@ -13,6 +13,13 @@ type OrderRepository interface {
 
 type Order struct {
 	orderRepository *OrderRepository
+	db              *database.DB
+}
+
+func New(db *database.DB) *Order {
+	return &Order{
+		db: db,
+	}
 }
 
 func (o *Order) Create(order *model.Order, db *database.DB) error {

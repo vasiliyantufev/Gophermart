@@ -13,6 +13,13 @@ type BalanceRepository interface {
 
 type Balance struct {
 	balance *BalanceRepository
+	db      *database.DB
+}
+
+func New(db *database.DB) *Balance {
+	return &Balance{
+		db: db,
+	}
 }
 
 func (b *Balance) GetBalance(*model.User, database.DB) error {

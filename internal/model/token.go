@@ -2,9 +2,9 @@ package model
 
 import "time"
 
-type User struct {
+type Token struct {
 	ID        int       `json:"id"`
-	Login     string    `json:"login"`
-	Password  string    `json:"password,omitempty"`
+	UserID    int       `json:"user_id"`
+	Token     string    `json:"token"`
 	CreatedAt time.Time `json:"created_at"`
 }
