@@ -48,10 +48,11 @@ type server struct {
 	tokenRepository   *token.Token
 	handlers          ServerHandlers
 	storeSession      sessions.Store
+	jwt               service.JWT
 }
 
-func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB, storeSession *sessions.CookieStore) *server {
-	return &server{log: *logger, cfg: cfg, db: db, storeSession: storeSession}
+func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB, storeSession *sessions.CookieStore, jwt service.JWT) *server {
+	return &server{log: *logger, cfg: cfg, db: db, storeSession: storeSession, jwt: jwt}
 }
 
 func (s *server) StartServer(r *chi.Mux, cfg *config.Config, log *logrus.Logger) {
@@ -87,7 +88,7 @@ func (s *server) Route() *chi.Mux {
 	return r
 }
 
-func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) { //curl -X POST http://localhost:8080/api/user/login -H "Content-Type: application/json" -d '{"login": "login", "password": "password"}'
+func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	type request struct {
 		Login    string `json:"login"`
@@ -119,19 +120,19 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) { //curl -
 		return
 	}
 
-	session, err := s.storeSession.Get(r, sessionName)
+	userPayload := &model.UserPayload{
+		ID:    u.ID,
+		Login: u.Login,
+	}
+
+	token, err := s.jwt.GenerateToken(userPayload)
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
-	session.Values["user_id"] = u.ID
-	if err := s.storeSession.Save(r, w, session); err != nil {
-		s.log.Error(err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
+	r.Header.Set("Authorization", token)
 
 	s.log.Info("Successful login")
 	http.Error(w, "Successful login", http.StatusOK)
@@ -273,30 +274,22 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		session, err := s.storeSession.Get(r, sessionName)
-		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			s.log.Error(err)
-			return
-		}
-
-		id, auth := session.Values["user_id"]
-		if !auth {
-			s.log.Error(err)
+		token := r.Header.Get("Authorization")
+		if token == "" {
 			http.Error(w, "User not authenticated", http.StatusUnauthorized)
 			s.log.Error("User not authenticated")
 			return
 		}
 		s.log.Info("User authenticated")
 
-		u, _ := s.userRepository.FindByID(id)
-		if u == nil {
+		user, err := s.jwt.ParseToken(token)
+		if err != nil {
+			s.log.Error(err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			s.log.Error("User not find")
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "ctxUser", u)
+		ctx := context.WithValue(r.Context(), "ctxUser", user)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	github.com/cristalhq/jwt/v5 v5.0.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	golang.org/x/sys v0.6.0 // indirect
 )

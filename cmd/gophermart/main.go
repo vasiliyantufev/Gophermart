@@ -7,6 +7,7 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/api"
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
+	"github.com/vasiliyantufev/gophermart/internal/service"
 )
 
 func main() {
@@ -15,17 +16,22 @@ func main() {
 
 	store := sessions.NewCookieStore([]byte(cfg.SessionKey))
 
-	db, _ := database.New(cfg)
-	defer db.Close()
+	keyb := service.DecodeKey(cfg.TokenKey)
+	jwt := service.NewJwt(keyb)
 
 	log := logrus.New()
-	log.SetLevel(cfg.DebugLevel)
+	log.SetLevel(cfg.LogLevel)
 
-	server := api.NewServer(log, cfg, db, store)
+	db, err := database.New(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	server := api.NewServer(log, cfg, db, store, jwt)
 
 	r := chi.NewRouter()
 	r.Mount("/", server.Route())
 
 	server.StartServer(r, cfg, log)
-
 }
