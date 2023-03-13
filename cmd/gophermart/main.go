@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/sessions"
+	_ "github.com/gorilla/sessions"
 	"github.com/sirupsen/logrus"
 	"github.com/vasiliyantufev/gophermart/internal/api"
 	"github.com/vasiliyantufev/gophermart/internal/config"
@@ -14,7 +14,7 @@ func main() {
 
 	cfg := config.New()
 
-	store := sessions.NewCookieStore([]byte(cfg.SessionKey))
+	//store := sessions.NewCookieStore([]byte(cfg.SessionKey))
 
 	keyb := service.DecodeKey(cfg.TokenKey)
 	jwt := service.NewJwt(keyb)
@@ -28,7 +28,7 @@ func main() {
 	}
 	defer db.Close()
 
-	server := api.NewServer(log, cfg, db, store, jwt)
+	server := api.NewServer(log, cfg, db /*store,*/, jwt)
 
 	r := chi.NewRouter()
 	r.Mount("/", server.Route())

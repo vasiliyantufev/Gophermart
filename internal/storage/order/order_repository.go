@@ -1,7 +1,6 @@
 package order
 
 import (
-	"fmt"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
 )
@@ -71,14 +70,13 @@ func (o *Order) GetOrders(userId int) ([]model.Order, error) {
 	var orders []model.Order
 	var order model.Order
 
-	fmt.Print(userId)
+	//fmt.Print(userId)
 
 	query := "SELECT * FROM orders"
 
 	rows, err := o.db.Pool.Query(query)
-
 	if err != nil {
-		return orders, nil
+		return nil, err
 	}
 
 	for rows.Next() {

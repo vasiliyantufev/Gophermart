@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/sessions"
 	"github.com/sirupsen/logrus"
 
 	"github.com/vasiliyantufev/gophermart/internal/config"
@@ -36,8 +35,6 @@ type ServerHandlers interface {
 	authMiddleware(w http.ResponseWriter, r *http.Request)
 }
 
-const sessionName = "gophermart"
-
 type server struct {
 	log               logrus.Logger
 	cfg               *config.Config
@@ -47,12 +44,12 @@ type server struct {
 	balanceRepository *balance.Balance
 	tokenRepository   *token.Token
 	handlers          ServerHandlers
-	storeSession      sessions.Store
-	jwt               service.JWT
+	//storeSession      sessions.Store
+	jwt service.JWT
 }
 
-func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB, storeSession *sessions.CookieStore, jwt service.JWT) *server {
-	return &server{log: *logger, cfg: cfg, db: db, storeSession: storeSession, jwt: jwt}
+func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB /*storeSession *sessions.CookieStore,*/, jwt service.JWT) *server {
+	return &server{log: *logger, cfg: cfg, db: db /*, storeSession: storeSession*/, jwt: jwt}
 }
 
 func (s *server) StartServer(r *chi.Mux, cfg *config.Config, log *logrus.Logger) {
@@ -206,7 +203,7 @@ func (s *server) postOrderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	timeNow := time.Now()
-	user := r.Context().Value("ctxUser").(*model.User)
+	user := r.Context().Value("userPayloadCtx").(*model.User)
 
 	order := &model.Order{
 		UserID:        user.ID,
@@ -245,7 +242,7 @@ func (s *server) getOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
-	user := r.Context().Value("ctxUser").(*model.User)
+	user := r.Context().Value("userPayloadCtx").(*model.User)
 
 	o, _ := s.orderRepository.GetOrders(user.ID)
 	if o == nil {
@@ -289,7 +286,7 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "ctxUser", user)
+		ctx := context.WithValue(r.Context(), "userPayloadCtx", user)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

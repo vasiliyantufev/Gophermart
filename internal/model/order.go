@@ -13,3 +13,16 @@ type Order struct {
 	CreatedAt     time.Time        `json:"created_at"`
 	UpdatedAt     time.Time        `json:"updated_at"`
 }
+
+type Orders struct {
+	Number    int
+	Status    storage.Statuses
+	Accrual   float64
+	UpdatedAt time.Time
+}
+
+type OrderID struct {
+	Order   int
+	Status  storage.Statuses
+	Accrual float64
+}

@@ -9,3 +9,19 @@ type Balance struct {
 	Delta     float64   `json:"delta"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type BalanceUser struct {
+	Current   float64
+	Withdrawn float64
+}
+
+type BalanceWithdraw struct {
+	Order int
+	Sum   float64
+}
+
+type BalanceWithdrawals struct {
+	Order        int
+	Sum          float64
+	Processed_at time.Time
+}
