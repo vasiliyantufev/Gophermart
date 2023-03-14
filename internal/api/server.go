@@ -32,7 +32,6 @@ type ServerHandlers interface {
 	loginHandler(w http.ResponseWriter, r *http.Request)
 	registerHandler(w http.ResponseWriter, r *http.Request)
 	createOrderHandler(w http.ResponseWriter, r *http.Request)
-	//getOrderHandler(w http.ResponseWriter, r *http.Request)
 	getOrdersHandler(w http.ResponseWriter, r *http.Request)
 	getBalanceHandler(w http.ResponseWriter, r *http.Request)
 	createWithdrawHandler(w http.ResponseWriter, r *http.Request)
@@ -81,7 +80,7 @@ func (s *server) Route() *chi.Mux {
 			r.Use(s.authMiddleware)
 			r.Post("/orders", s.createOrderHandler)
 			r.Get("/orders", s.getOrdersHandler)
-			r.Get("/orders/{id}", s.getOrderHandler)
+			//r.Get("/orders/{id}", s.getOrderHandler)
 			r.Get("/balance", s.getBalanceHandler)
 			r.Post("/balance/withdraw", s.getBalanceHandler)
 			r.Get("/withdrawals", s.createWithdrawHandler)
@@ -229,47 +228,6 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 	s.log.Info("New order number accepted for processing")
 	http.Error(w, "New order number accepted for processing", http.StatusAccepted)
-}
-
-func (s *server) getOrderHandler(w http.ResponseWriter, r *http.Request) {
-
-	orderID := &model.OrderID{}
-	if err := json.NewDecoder(r.Body).Decode(orderID); err != nil {
-		s.log.Error(err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	o, _ := s.orderRepository.Servicer.FindByID(orderID.Order)
-	if o == nil {
-		s.log.Error("Order is not registered in the billing system")
-		http.Error(w, "Order is not registered in the billing system", http.StatusNoContent)
-		return
-	}
-
-	if orderID.Status == "INVALID" {
-		err := s.orderRepository.Servicer.Update(orderID)
-		if err != nil {
-			s.log.Error(err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
-	}
-	if orderID.Status == "PROCESSED" {
-		user := r.Context().Value("userPayloadCtx").(*model.User)
-		err := s.orderRepository.Servicer.Update(orderID)
-		if err != nil {
-			s.log.Error(err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
-		err = s.balanceRepository.Balancer.Accrue(user.ID, orderID)
-		if err != nil {
-			s.log.Error(err)
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		}
-	}
-
-	s.log.Info("Successful request processing")
-	http.Error(w, "Successful request processing", http.StatusOK)
 }
 
 func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
