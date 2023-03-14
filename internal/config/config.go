@@ -13,6 +13,7 @@ type Config struct {
 	LogLevel             log.Level `env:"DEBUG_LEVEL" envDefault:"debug"`
 	SessionKey           string    `env:"SESSION_KEY" envDefault:"secret"`
 	TokenKey             string    `env:"TOKEN_KEY"   envDefault:"Q4RZDVti48qAsDw8u3NFLRScGyTMpbZ8tbA7Ubs8YJTZHMNBvw6vtCVrXbSHt5V1O-zf8OR35tbkApuri-TrHA"`
+	RateLimit            int       `env:"RATE_LIMIT"`
 }
 
 func New() *Config {
@@ -23,6 +24,7 @@ func New() *Config {
 	flag.StringVar(&cfg.Address, "a", "localhost:8080", "Адрес и порт запуска сервиса")
 	flag.StringVar(&cfg.DatabaseUri, "d", "", "Адрес подключения к базе данных")
 	flag.StringVar(&cfg.AccrualSystemAddress, "r", "", "Адрес системы расчёта начислений")
+	flag.IntVar(&cfg.RateLimit, "l", 2, "Количество одновременно исходящих запросов на сервер")
 	flag.Parse()
 
 	err := env.Parse(&cfg)

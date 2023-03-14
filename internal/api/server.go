@@ -32,7 +32,7 @@ type ServerHandlers interface {
 	loginHandler(w http.ResponseWriter, r *http.Request)
 	registerHandler(w http.ResponseWriter, r *http.Request)
 	createOrderHandler(w http.ResponseWriter, r *http.Request)
-	getOrderHandler(w http.ResponseWriter, r *http.Request)
+	//getOrderHandler(w http.ResponseWriter, r *http.Request)
 	getOrdersHandler(w http.ResponseWriter, r *http.Request)
 	getBalanceHandler(w http.ResponseWriter, r *http.Request)
 	createWithdrawHandler(w http.ResponseWriter, r *http.Request)
