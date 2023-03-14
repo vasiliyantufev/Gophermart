@@ -6,15 +6,15 @@ import (
 	"time"
 )
 
-type UserRepository interface {
-	Create(*model.User, database.DB) error
-	FindByID(int, database.DB) (*model.User, error)
-	FindByLogin(string, database.DB) (*model.User, error)
+type Constructor interface {
+	Create(user *model.User) error
+	FindByID(id int) (*model.User, error)
+	FindByLogin(login string) (*model.User, error)
 }
 
 type User struct {
-	userRepository *UserRepository
-	db             *database.DB
+	Constructor Constructor
+	db          *database.DB
 }
 
 func New(db *database.DB) *User {
@@ -25,17 +25,15 @@ func New(db *database.DB) *User {
 
 func (u *User) Create(user *model.User) error {
 
-	timeNow := time.Now()
-
 	return u.db.Pool.QueryRow(
 		"INSERT INTO users (login, password, created_at) VALUES ($1, $2, $3) RETURNING id",
 		user.Login,
 		user.Password,
-		timeNow,
+		time.Now(),
 	).Scan(&user.ID)
 }
 
-func (u *User) FindByID(id interface{}) (*model.User, error) {
+func (u *User) FindByID(id int) (*model.User, error) {
 
 	user := &model.User{}
 

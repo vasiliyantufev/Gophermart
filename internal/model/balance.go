@@ -22,6 +22,6 @@ type BalanceWithdraw struct {
 
 type BalanceWithdrawals struct {
 	Order        int
-	Sum          float64
-	Processed_at time.Time
+	Sum         float64
+	ProcessedAt time.Time
 }

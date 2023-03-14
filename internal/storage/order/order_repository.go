@@ -3,16 +3,20 @@ package order
 import (
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
+	"time"
 )
 
-type OrderRepository interface {
-	Create(*model.Order, database.DB) error
-	FindByID(int, database.DB) (*model.Order, error)
+type Servicer interface {
+	Create(order *model.Order) error
+	Update(orderID *model.OrderID) error
+	FindByLoginAndID(id int, user *model.User) (*model.Order, error)
+	FindByID(id int) (*model.Order, error)
+	GetOrders(userId int) ([]model.Order, error)
 }
 
 type Order struct {
-	orderRepository *OrderRepository
-	db              *database.DB
+	Servicer Servicer
+	db       *database.DB
 }
 
 func New(db *database.DB) *Order {
@@ -29,8 +33,15 @@ func (o *Order) Create(order *model.Order) error {
 		order.OrderID,
 		order.CurrentStatus,
 		order.CreatedAt,
-		order.CreatedAt,
+		order.UpdatedAt,
 	).Scan(&order.ID)
+}
+
+func (o *Order) Update(orderID *model.OrderID) error {
+
+	var id int
+	return o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING id;",
+		orderID.Order, orderID.Status, time.Now()).Scan(&id)
 }
 
 func (o *Order) FindByLoginAndID(id int, user *model.User) (*model.Order, error) {
@@ -70,11 +81,9 @@ func (o *Order) GetOrders(userId int) ([]model.Order, error) {
 	var orders []model.Order
 	var order model.Order
 
-	//fmt.Print(userId)
+	query := "SELECT * FROM orders where user_id = $1"
 
-	query := "SELECT * FROM orders"
-
-	rows, err := o.db.Pool.Query(query)
+	rows, err := o.db.Pool.Query(query, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -83,9 +92,8 @@ func (o *Order) GetOrders(userId int) ([]model.Order, error) {
 		if err = rows.Scan(&order.ID, &order.UserID, &order.OrderID, &order.CurrentStatus,
 			&order.CreatedAt, &order.UpdatedAt,
 		); err != nil {
-			return orders, err
+			return nil, err
 		}
-
 		orders = append(orders, order)
 	}
 
