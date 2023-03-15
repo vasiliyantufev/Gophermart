@@ -13,8 +13,7 @@ type Constructor interface {
 }
 
 type User struct {
-	Constructor Constructor
-	db          *database.DB
+	db *database.DB
 }
 
 func New(db *database.DB) *User {

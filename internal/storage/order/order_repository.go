@@ -16,8 +16,7 @@ type Servicer interface {
 }
 
 type Order struct {
-	Servicer Servicer
-	db       *database.DB
+	db *database.DB
 }
 
 func New(db *database.DB) *Order {

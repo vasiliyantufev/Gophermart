@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"github.com/vasiliyantufev/gophermart/internal/storage"
 	"github.com/vasiliyantufev/gophermart/internal/storage/token"
@@ -22,11 +23,6 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/storage/order"
 	"github.com/vasiliyantufev/gophermart/internal/storage/user"
 )
-
-type request struct {
-	Login    string `json:"login"`
-	Password string `json:"password"`
-}
 
 type ServerHandlers interface {
 	loginHandler(w http.ResponseWriter, r *http.Request)
@@ -91,7 +87,7 @@ func (s *server) Route() *chi.Mux {
 
 func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 
-	req := &request{}
+	req := &model.Request{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		s.log.Error(err)
 		http.Error(w, "Invalid request format", http.StatusBadRequest)
@@ -103,16 +99,20 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		Password: req.Password,
 	}
 
-	u, err := s.userRepository.Constructor.FindByLogin(user.Login)
+	u, err := s.userRepository.FindByLogin(user.Login)
 	if err != nil {
-		s.log.Error("Invalid username")
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		s.log.Error(err)
+		if err == sql.ErrNoRows {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if service.CheckPasswordHash(req.Password, u.Password) {
+	if !service.CheckPasswordHash(req.Password, u.Password) {
 		s.log.Error("Invalid username/password")
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, "Invalid username/password", http.StatusUnauthorized)
 		return
 	}
 
@@ -128,23 +128,20 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	r.Header.Set("Authorization", token)
-
-	s.log.Info("Successful login")
-	http.Error(w, "Successful login", http.StatusOK)
-
+	w.Header().Set("Authorization", token)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 
-	req := &request{}
+	req := &model.Request{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		s.log.Error(err)
 		http.Error(w, "Invalid request format", http.StatusBadRequest)
 		return
 	}
 
-	password, err := service.HashPassword(req.Password)
+	hashedPassword, err := service.HashPassword(req.Password)
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -153,17 +150,17 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := &model.User{
 		Login:    req.Login,
-		Password: password,
+		Password: hashedPassword,
 	}
 
-	u, err := s.userRepository.Constructor.FindByLogin(user.Login)
+	u, err := s.userRepository.FindByLogin(user.Login)
 	if u != nil {
 		s.log.Error("Login is already taken")
 		http.Error(w, "Login is already taken", http.StatusConflict)
 		return
 	}
 
-	err = s.userRepository.Constructor.Create(user)
+	err = s.userRepository.Create(user)
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -207,19 +204,19 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:     timeNow,
 	}
 
-	o, _ := s.orderRepository.Servicer.FindByLoginAndID(order.ID, user)
+	o, _ := s.orderRepository.FindByLoginAndID(order.ID, user)
 	if o == nil {
 		s.log.Error("Order number has already been uploaded by this user")
 		http.Error(w, "Order number has already been uploaded by this user", http.StatusOK)
 		return
 	}
-	o, _ = s.orderRepository.Servicer.FindByID(order.ID)
+	o, _ = s.orderRepository.FindByID(order.ID)
 	if o == nil {
 		s.log.Error("Order number has already been uploaded by another user")
 		http.Error(w, "Order number has already been uploaded by another user", http.StatusConflict)
 		return
 	}
-	err = s.orderRepository.Servicer.Create(order)
+	err = s.orderRepository.Create(order)
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -234,7 +231,7 @@ func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("userPayloadCtx").(*model.User)
 
-	o, _ := s.orderRepository.Servicer.GetOrders(user.ID)
+	o, _ := s.orderRepository.GetOrders(user.ID)
 	if o == nil {
 		s.log.Error("No data to answer")
 		http.Error(w, "No data to answer", http.StatusNoContent)
@@ -248,7 +245,7 @@ func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("userPayloadCtx").(*model.User)
 
-	balance, err := s.balanceRepository.Balancer.GetBalance(user.ID)
+	balance, err := s.balanceRepository.GetBalance(user.ID)
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -269,7 +266,7 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	o, _ := s.orderRepository.Servicer.FindByID(withdraw.Order)
+	o, _ := s.orderRepository.FindByID(withdraw.Order)
 	if o == nil {
 		s.log.Error("Invalid order number")
 		http.Error(w, "Invalid order number", http.StatusUnprocessableEntity)
@@ -277,7 +274,7 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := r.Context().Value("userPayloadCtx").(*model.User)
-	err := s.balanceRepository.Balancer.WithDraw(user.ID, withdraw)
+	err := s.balanceRepository.WithDraw(user.ID, withdraw)
 	if err.Error() == "There are not enough funds on the account" {
 		s.log.Info("There are not enough funds on the account")
 		http.Error(w, "There are not enough funds on the account", http.StatusOK)
@@ -295,7 +292,7 @@ func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("userPayloadCtx").(*model.User)
 
-	withDrawals, err := s.balanceRepository.Balancer.WithDrawals(user.ID)
+	withDrawals, err := s.balanceRepository.WithDrawals(user.ID)
 	if withDrawals == nil {
 		s.log.Error(err)
 		http.Error(w, "No write-offs", http.StatusNoContent)
@@ -323,15 +320,14 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 		}
 		s.log.Info("User authenticated")
 
-		user, err := s.jwt.ParseToken(token)
+		userPayload, err := s.jwt.ParseToken(token)
 		if err != nil {
 			s.log.Error(err)
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "userPayloadCtx", user)
-
+		ctx := context.WithValue(r.Context(), "userPayloadCtx", userPayload)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

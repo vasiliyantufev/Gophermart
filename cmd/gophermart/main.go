@@ -18,8 +18,11 @@ func main() {
 	cfg := config.New()
 
 	//store := sessions.NewCookieStore([]byte(cfg.SessionKey))
+	//keyb := service.DecodeKey(cfg.TokenKey)
 
-	keyb := service.DecodeKey(cfg.TokenKey)
+	key := service.GenerateKey()
+	keyb := service.DecodeKey(key)
+
 	jwt := service.NewJwt(keyb)
 
 	log := logrus.New()

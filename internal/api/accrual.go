@@ -100,24 +100,24 @@ func (a accrual) makeGetRequest(id int, url string) {
 
 func (a accrual) CheckOrder(orderID *model.OrderID, ctx context.Context) error {
 
-	o, _ := a.orderRepository.Servicer.FindByID(orderID.Order)
+	o, _ := a.orderRepository.FindByID(orderID.Order)
 	if o == nil {
 		return errors.New("Order is not registered in the billing system")
 	}
 
 	if orderID.Status == "INVALID" {
-		err := a.orderRepository.Servicer.Update(orderID)
+		err := a.orderRepository.Update(orderID)
 		if err != nil {
 			a.log.Error(err)
 		}
 	}
 	if orderID.Status == "PROCESSED" {
 		user := ctx.Value("userPayloadCtx").(*model.User)
-		err := a.orderRepository.Servicer.Update(orderID)
+		err := a.orderRepository.Update(orderID)
 		if err != nil {
 			a.log.Error(err)
 		}
-		err = a.balanceRepository.Balancer.Accrue(user.ID, orderID)
+		err = a.balanceRepository.Accrue(user.ID, orderID)
 		if err != nil {
 			a.log.Error(err)
 		}

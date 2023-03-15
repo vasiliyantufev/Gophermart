@@ -11,8 +11,7 @@ type TokenRepository interface {
 }
 
 type Token struct {
-	token *TokenRepository
-	db    *database.DB
+	db *database.DB
 }
 
 func New(db *database.DB) *Token {

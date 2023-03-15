@@ -15,8 +15,7 @@ type Balancer interface {
 }
 
 type Balance struct {
-	Balancer Balancer
-	db       *database.DB
+	db *database.DB
 }
 
 func New(db *database.DB) *Balance {
