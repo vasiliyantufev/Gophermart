@@ -2,12 +2,18 @@ package api
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
+	"github.com/vasiliyantufev/gophermart/internal/model"
+	"github.com/vasiliyantufev/gophermart/internal/storage/balance"
 	"github.com/vasiliyantufev/gophermart/internal/storage/order"
+	"io"
 	"log"
+	"net/http"
 	"strconv"
 	"time"
 )
@@ -19,10 +25,11 @@ type Accruer interface {
 }
 
 type accrual struct {
-	cfg             *config.Config
-	db              *database.DB
-	log             *logrus.Logger
-	orderRepository *order.Order
+	cfg               *config.Config
+	db                *database.DB
+	log               *logrus.Logger
+	orderRepository   *order.Order
+	balanceRepository *balance.Balance
 }
 
 func NewAccrual(log *logrus.Logger, cfg *config.Config) *accrual {
@@ -38,9 +45,7 @@ func (a accrual) StartWorkers(ctx context.Context, accruar *accrual) {
 
 func (a accrual) putOrdersWorker(ctx context.Context, urlPath string) {
 
-	client := resty.New()
-
-	ticker := time.NewTicker(10)
+	ticker := time.NewTicker(0)
 	defer ticker.Stop()
 	for {
 		select {
@@ -57,29 +62,65 @@ func (a accrual) putOrdersWorker(ctx context.Context, urlPath string) {
 			for _, order := range orders {
 				a.log.Info("Get order: " + strconv.Itoa(order.OrderID))
 				urlPath = "http://" + a.cfg.AccrualSystemAddress
-				go a.makeGetRequest(client, order.ID, urlPath)
+				go a.makeGetRequest(order.ID, urlPath)
 			}
 		}
 	}
 
 }
 
-func (a accrual) makeGetRequest(client *resty.Client, id int, url string) {
+func (a accrual) makeGetRequest(id int, url string) {
+
+	var body []byte
+
+	ctx := context.Background()
+
+	var orderID *model.OrderID
 
 	urlOrder := url + "/" + strconv.Itoa(id)
 
-	//orderID := &model.OrderID{}
-
-	_, err := client.R().
-		SetHeader("Content-Type", "application/json").
-		SetBody(id).
-		Get(urlOrder)
+	r, err := http.Get(urlOrder)
 	if err != nil {
-		log.Println(err)
 		return
 	}
 
-	//a.orderRepository.Servicer.CheckOrder(orderID)
+	body, err = io.ReadAll(r.Body)
+	if err != nil {
+		return
+	}
 
-	//return order
+	err = json.Unmarshal(body, orderID)
+	if err != nil {
+		return
+	}
+
+	a.CheckOrder(orderID, ctx)
+
+}
+
+func (a accrual) CheckOrder(orderID *model.OrderID, ctx context.Context) error {
+
+	o, _ := a.orderRepository.Servicer.FindByID(orderID.Order)
+	if o == nil {
+		return errors.New("Order is not registered in the billing system")
+	}
+
+	if orderID.Status == "INVALID" {
+		err := a.orderRepository.Servicer.Update(orderID)
+		if err != nil {
+			a.log.Error(err)
+		}
+	}
+	if orderID.Status == "PROCESSED" {
+		user := ctx.Value("userPayloadCtx").(*model.User)
+		err := a.orderRepository.Servicer.Update(orderID)
+		if err != nil {
+			a.log.Error(err)
+		}
+		err = a.balanceRepository.Balancer.Accrue(user.ID, orderID)
+		if err != nil {
+			a.log.Error(err)
+		}
+	}
+	return nil
 }
