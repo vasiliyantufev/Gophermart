@@ -1,13 +1,20 @@
 package token
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
+	"time"
 )
 
+const lengthToken = 32
+const lifetimeToken = 100 * time.Hour
+
 type TokenRepository interface {
-	Created(*model.Token) error
-	Validated(*model.Token) error
+	Create(user *model.User) (string, error)
+	Generate(length int) string
+	Validate(token string) bool
 }
 
 type Token struct {
@@ -20,12 +27,49 @@ func New(db *database.DB) *Token {
 	}
 }
 
-func (t *Token) Create(token *model.Token) error {
+func (t Token) Create(user *model.User) (string, error) {
 
-	return nil
+	token := t.Generate(lengthToken)
+	currentTime := time.Now()
+
+	var id int
+	return "", t.db.Pool.QueryRow(
+		"INSERT INTO token (user_id, token, created_at, deleted_at) VALUES ($1, $2, $3, $4) RETURNING id",
+		user.ID,
+		token,
+		currentTime,
+		currentTime.Add(time.Hour+lifetimeToken),
+	).Scan(&id)
+
+	return token, nil
 }
 
-func (t *Token) Validated(token *model.Token) error {
+func (t Token) Generate(length int) string {
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		return ""
+	}
+	return hex.EncodeToString(b)
+}
 
-	return nil
+func (t *Token) Validate(token string) (bool, *model.TokenUser, error) {
+
+	currentTime := time.Now()
+
+	tokenUser := &model.TokenUser{}
+	if err := t.db.Pool.QueryRow("SELECT users.id, users.login, token.token, token.deleted_at FROM token "+
+		"INNER JOIN users ON users.id = token.user_id  where token.token = $1", token).Scan(
+		&tokenUser.UserID,
+		&tokenUser.Login,
+		&tokenUser.Token,
+		&tokenUser.DeletedAt,
+	); err != nil {
+		return false, nil, err
+	}
+
+	if currentTime.After(tokenUser.DeletedAt) {
+		return false, tokenUser, nil
+	}
+
+	return true, tokenUser, nil
 }
