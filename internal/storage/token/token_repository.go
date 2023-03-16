@@ -33,15 +33,13 @@ func (t Token) Create(user *model.User) (string, error) {
 	currentTime := time.Now()
 
 	var id int
-	return "", t.db.Pool.QueryRow(
+	return token, t.db.Pool.QueryRow(
 		"INSERT INTO token (user_id, token, created_at, deleted_at) VALUES ($1, $2, $3, $4) RETURNING id",
 		user.ID,
 		token,
 		currentTime,
 		currentTime.Add(time.Hour+lifetimeToken),
 	).Scan(&id)
-
-	return token, nil
 }
 
 func (t Token) Generate(length int) string {

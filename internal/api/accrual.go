@@ -100,7 +100,7 @@ func (a accrual) makeGetRequest(id int, url string) {
 
 func (a accrual) CheckOrder(orderID *model.OrderID, ctx context.Context) error {
 
-	o, _ := a.orderRepository.FindByID(orderID.Order)
+	o, _ := a.orderRepository.FindByOrderID(orderID.Order)
 	if o == nil {
 		return errors.New("Order is not registered in the billing system")
 	}

@@ -8,7 +8,6 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/api"
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
-	"github.com/vasiliyantufev/gophermart/internal/service"
 	"os/signal"
 	"syscall"
 )
@@ -16,14 +15,6 @@ import (
 func main() {
 
 	cfg := config.New()
-
-	//store := sessions.NewCookieStore([]byte(cfg.SessionKey))
-	//keyb := service.DecodeKey(cfg.TokenKey)
-
-	key := service.GenerateKey()
-	keyb := service.DecodeKey(key)
-
-	jwt := service.NewJwt(keyb)
 
 	log := logrus.New()
 	log.SetLevel(cfg.LogLevel)
@@ -34,7 +25,7 @@ func main() {
 	}
 	defer db.Close()
 
-	server := api.NewServer(log, cfg, db /*store,*/, jwt)
+	server := api.NewServer(log, cfg, db)
 	accrual := api.NewAccrual(log, cfg)
 
 	r := chi.NewRouter()

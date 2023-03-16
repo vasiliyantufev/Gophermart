@@ -44,11 +44,12 @@ func (o *Order) Update(orderID *model.OrderID) error {
 		orderID.Order, orderID.Status, time.Now()).Scan(&id)
 }
 
-func (o *Order) FindByLoginAndID(id int, user *model.User) (*model.Order, error) {
+func (o *Order) FindByOrderIDAndUserID(orderId int, userId int) (*model.Order, error) {
 
 	order := &model.Order{}
 
-	if err := o.db.Pool.QueryRow("SELECT * FROM orders where id=$1 and login=$2", id, user.Login).Scan(
+	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1 and user_id=$2", orderId, userId).Scan(
+		&order.ID,
 		&order.UserID,
 		&order.OrderID,
 		&order.CurrentStatus,
@@ -60,11 +61,12 @@ func (o *Order) FindByLoginAndID(id int, user *model.User) (*model.Order, error)
 	return order, nil
 }
 
-func (o *Order) FindByID(id int) (*model.Order, error) {
+func (o *Order) FindByOrderID(orderId int) (*model.Order, error) {
 
 	order := &model.Order{}
 
-	if err := o.db.Pool.QueryRow("SELECT * FROM orders where id=$1", id).Scan(
+	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1", orderId).Scan(
+		&order.ID,
 		&order.UserID,
 		&order.OrderID,
 		&order.CurrentStatus,

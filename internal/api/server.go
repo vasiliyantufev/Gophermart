@@ -4,24 +4,22 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"github.com/vasiliyantufev/gophermart/internal/storage"
-	"github.com/vasiliyantufev/gophermart/internal/storage/token"
-	"io"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
-
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
 	"github.com/vasiliyantufev/gophermart/internal/service"
 	"github.com/vasiliyantufev/gophermart/internal/storage/balance"
 	"github.com/vasiliyantufev/gophermart/internal/storage/order"
+	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
+	"github.com/vasiliyantufev/gophermart/internal/storage/token"
 	"github.com/vasiliyantufev/gophermart/internal/storage/user"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type ServerHandlers interface {
@@ -46,7 +44,7 @@ type server struct {
 	handlers          ServerHandlers
 }
 
-func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB /*storeSession *sessions.CookieStore,*/, jwt service.JWT) *server {
+func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB /*storeSession *sessions.CookieStore,, jwt service.JWT*/) *server {
 	return &server{log: *logger, cfg: cfg, db: db}
 }
 
@@ -93,11 +91,12 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	u, err := s.userRepository.FindByLogin(req.Login)
 	if err != nil {
-		s.log.Error(err)
 		if err == sql.ErrNoRows {
+			s.log.Error("Invalid username")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+		s.log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -164,69 +163,78 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		s.log.Error(err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	OrderID, err := strconv.Atoi(strings.TrimSpace(string(resp)))
 	if err != nil {
 		s.log.Error(err)
-		http.Error(w, "Invalid request format", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if validOrder := service.ValidLuhn(OrderID); validOrder == false {
 		s.log.Error("Invalid order number format")
-		http.Error(w, "invalid order number format", http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
 	timeNow := time.Now()
-	user := r.Context().Value("UserCtx").(*model.User)
+	user := r.Context().Value("UserCtx").(*model.TokenUser)
 
 	order := &model.Order{
-		UserID:        user.ID,
+		UserID:        user.UserID,
 		OrderID:       OrderID,
-		CurrentStatus: storage.Statuses(0),
+		CurrentStatus: string(statuses.New),
 		CreatedAt:     timeNow,
 		UpdatedAt:     timeNow,
 	}
 
-	o, _ := s.orderRepository.FindByLoginAndID(order.ID, user)
-	if o == nil {
+	o, err := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, user.UserID)
+	if o != nil {
 		s.log.Error("Order number has already been uploaded by this user")
-		http.Error(w, "Order number has already been uploaded by this user", http.StatusOK)
+		w.WriteHeader(http.StatusOK)
 		return
 	}
-	o, _ = s.orderRepository.FindByID(order.ID)
-	if o == nil {
+	o, _ = s.orderRepository.FindByOrderID(order.OrderID)
+	if o != nil {
 		s.log.Error("Order number has already been uploaded by another user")
-		http.Error(w, "Order number has already been uploaded by another user", http.StatusConflict)
+		w.WriteHeader(http.StatusConflict)
 		return
 	}
 	err = s.orderRepository.Create(order)
 	if err != nil {
 		s.log.Error(err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	s.log.Info("New order number accepted for processing")
-	http.Error(w, "New order number accepted for processing", http.StatusAccepted)
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("UserCtx").(*model.TokenUser)
 
-	o, _ := s.orderRepository.GetOrders(user.UserID)
-	if o == nil {
+	orderList, _ := s.orderRepository.GetOrders(user.UserID)
+	if orderList == nil {
 		s.log.Error("No data to answer")
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	s.log.Error("Successful request processing")
-	http.Error(w, "Successful request processing", http.StatusOK)
+	resp, err := json.Marshal(orderList)
+	if err != nil {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	s.log.Info("Successful request processing")
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
 }
 
 func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
@@ -254,7 +262,7 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	o, _ := s.orderRepository.FindByID(withdraw.Order)
+	o, _ := s.orderRepository.FindByOrderID(withdraw.Order)
 	if o == nil {
 		s.log.Error("Invalid order number")
 		http.Error(w, "Invalid order number", http.StatusUnprocessableEntity)

@@ -1,13 +1,13 @@
-package storage
+package statuses
 
 type Statuses string
 
 const (
-	NEW = iota
-	REGISTERED
-	INVALID
-	PROCESSING
-	PROCESSED
+	New        Statuses = "NEW"
+	Registered Statuses = "REGISTERED"
+	Invalid    Statuses = "INVALID"
+	Processing Statuses = "PROCESSING"
+	Processed  Statuses = "PROCESSED"
 )
 
 /*
