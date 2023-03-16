@@ -13,15 +13,15 @@ type Order struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
-type Orders struct {
-	Number    int
-	Status    string
-	Accrual   float64
-	UpdatedAt time.Time
+type OrderResponse struct {
+	Number     int       `json:"number"`
+	Status     string    `json:"status"`
+	Accrual    int       `json:"-"`
+	UploadedAt time.Time `json:"uploaded_at"`
 }
 
 type OrderID struct {
 	Order   int
 	Status  string
-	Accrual float64
+	Accrual int
 }

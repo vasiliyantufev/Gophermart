@@ -78,12 +78,43 @@ func (o *Order) FindByOrderID(orderId int) (*model.Order, error) {
 	return order, nil
 }
 
-func (o *Order) GetOrders(userId int) ([]model.Order, error) {
+//func (o *Order) GetOrders(userId int) ([]model.Order, error) {
+//
+//	var orders []model.Order
+//	var order model.Order
+//
+//	query := "SELECT * FROM orders where user_id = $1"
+//
+//	rows, err := o.db.Pool.Query(query, userId)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	for rows.Next() {
+//		if err = rows.Scan(&order.ID, &order.UserID, &order.OrderID, &order.CurrentStatus,
+//			&order.CreatedAt, &order.UpdatedAt,
+//		); err != nil {
+//			return nil, err
+//		}
+//		orders = append(orders, order)
+//	}
+//
+//	return orders, nil
+//}
 
-	var orders []model.Order
-	var order model.Order
+func (o *Order) GetOrders(userId int) ([]model.OrderResponse, error) {
 
-	query := "SELECT * FROM orders where user_id = $1"
+	var orders []model.OrderResponse
+	var order model.OrderResponse
+
+	query := "SELECT orders.order_id as number, " +
+		"sum(balance.delta) as accrual, " +
+		"orders.current_status as status, " +
+		"orders.updated_at as uploaded_at " +
+		"from orders " +
+		"INNER JOIN balance ON balance.order_id = orders.order_id " +
+		"where orders.user_id = $1 " +
+		"GROUP BY number, orders.id, status, uploaded_at"
 
 	rows, err := o.db.Pool.Query(query, userId)
 	if err != nil {
@@ -91,9 +122,7 @@ func (o *Order) GetOrders(userId int) ([]model.Order, error) {
 	}
 
 	for rows.Next() {
-		if err = rows.Scan(&order.ID, &order.UserID, &order.OrderID, &order.CurrentStatus,
-			&order.CreatedAt, &order.UpdatedAt,
-		); err != nil {
+		if err = rows.Scan(&order.Number, &order.Status, &order.Accrual, &order.UploadedAt); err != nil {
 			return nil, err
 		}
 		orders = append(orders, order)
