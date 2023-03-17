@@ -1,9 +1,9 @@
 package balance
 
 import (
-	"errors"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
+	"github.com/vasiliyantufev/gophermart/internal/storage/errors"
 	"time"
 )
 
@@ -53,25 +53,25 @@ func (b *Balance) Accrue(userId int, orderID *model.OrderID) error {
 func (b *Balance) WithDraw(userId int, wd *model.BalanceWithdraw) error {
 
 	var sum float64
-	err := b.db.Pool.QueryRow("select sum(delta) as balance from user where user_id = $1", userId).Scan(
+	err := b.db.Pool.QueryRow("select sum(delta) as balance from balance where user_id = $1", userId).Scan(
 		&sum,
 	)
 	if err != nil {
 		return err
 	}
 
-	if sum > wd.Sum {
-		var id int
-		return b.db.Pool.QueryRow(
-			"INSERT INTO balance (user_id, order_id, delta, created_at) VALUES ($1, $2, $3, $4) RETURNING id",
-			userId,
-			wd.Order,
-			wd.Sum,
-			time.Now(),
-		).Scan(&id)
+	if sum < wd.Sum {
+		return errors.ErrNotFunds
 	}
 
-	return errors.New("There are not enough funds on the account")
+	var id int
+	return b.db.Pool.QueryRow(
+		"INSERT INTO balance (user_id, order_id, delta, created_at) VALUES ($1, $2, $3, $4) RETURNING id",
+		userId,
+		wd.Order,
+		wd.Sum,
+		time.Now(),
+	).Scan(&id)
 }
 
 func (b *Balance) WithDrawals(userId int) ([]model.BalanceWithdrawals, error) {

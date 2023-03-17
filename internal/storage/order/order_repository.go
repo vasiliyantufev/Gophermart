@@ -79,30 +79,6 @@ func (o *Order) FindByOrderID(orderId int) (*model.Order, error) {
 	return order, nil
 }
 
-//func (o *Order) GetOrders(userId int) ([]model.Order, error) {
-//
-//	var orders []model.Order
-//	var order model.Order
-//
-//	query := "SELECT * FROM orders where user_id = $1"
-//
-//	rows, err := o.db.Pool.Query(query, userId)
-//	if err != nil {
-//		return nil, err
-//	}
-//
-//	for rows.Next() {
-//		if err = rows.Scan(&order.ID, &order.UserID, &order.OrderID, &order.CurrentStatus,
-//			&order.CreatedAt, &order.UpdatedAt,
-//		); err != nil {
-//			return nil, err
-//		}
-//		orders = append(orders, order)
-//	}
-//
-//	return orders, nil
-//}
-
 func (o *Order) GetOrders(userId int) ([]model.OrderResponse, error) {
 
 	logrus.Info(userId)
@@ -112,13 +88,11 @@ func (o *Order) GetOrders(userId int) ([]model.OrderResponse, error) {
 
 	query := "SELECT orders.order_id as number, " +
 		"orders.current_status as status, " +
-		//"COALESCE(sum(balance.delta), 0) as accrual, " +
 		"sum(balance.delta) as accrual, " +
 		"orders.updated_at as uploaded_at " +
 		"from orders " +
 		"LEFT JOIN balance ON balance.order_id = orders.order_id " +
 		"where orders.user_id = $1 " +
-		//"GROUP BY number, uploaded_at"
 		"GROUP BY number, status, uploaded_at"
 
 	logrus.Info(query)

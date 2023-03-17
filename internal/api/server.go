@@ -11,6 +11,7 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/model"
 	"github.com/vasiliyantufev/gophermart/internal/service"
 	"github.com/vasiliyantufev/gophermart/internal/storage/balance"
+	"github.com/vasiliyantufev/gophermart/internal/storage/errors"
 	"github.com/vasiliyantufev/gophermart/internal/storage/order"
 	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
 	"github.com/vasiliyantufev/gophermart/internal/storage/token"
@@ -73,8 +74,8 @@ func (s *server) Route() *chi.Mux {
 			r.Post("/orders", s.createOrderHandler)
 			r.Get("/orders", s.getOrdersHandler)
 			r.Get("/balance", s.getBalanceHandler)
-			r.Post("/balance/withdraw", s.getBalanceHandler)
-			r.Get("/withdrawals", s.createWithdrawHandler)
+			r.Post("/balance/withdraw", s.createWithdrawHandler)
+			r.Get("/withdrawals", s.getWithdrawalsHandler)
 		})
 	})
 	return r
@@ -245,18 +246,25 @@ func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
-	user := r.Context().Value("UserCtx").(*model.User)
+	user := r.Context().Value("UserCtx").(*model.TokenUser)
 
-	balance, err := s.balanceRepository.GetBalance(user.ID)
+	balance, err := s.balanceRepository.GetBalance(user.UserID)
 	if err != nil {
 		s.log.Error(err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	s.log.Info(balance)
+	resp, err := json.Marshal(balance)
+	if err != nil {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	s.log.Info("Successful request processing")
-	http.Error(w, "Successful request processing", http.StatusOK)
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
 }
 
 func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
@@ -264,30 +272,37 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 	withdraw := &model.BalanceWithdraw{}
 	if err := json.NewDecoder(r.Body).Decode(withdraw); err != nil {
 		s.log.Error(err)
-		http.Error(w, "Invalid request format", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	o, _ := s.orderRepository.FindByOrderID(withdraw.Order)
 	if o == nil {
 		s.log.Error("Invalid order number")
-		http.Error(w, "Invalid order number", http.StatusUnprocessableEntity)
+		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
-	user := r.Context().Value("UserCtx").(*model.User)
-	err := s.balanceRepository.WithDraw(user.ID, withdraw)
-	if err.Error() == "There are not enough funds on the account" {
+	if withdraw.Sum > 0 {
+		withdraw.Sum = -withdraw.Sum
+	}
+
+	user := r.Context().Value("UserCtx").(*model.TokenUser)
+
+	err := s.balanceRepository.WithDraw(user.UserID, withdraw)
+	if err == errors.ErrNotFunds {
 		s.log.Info("There are not enough funds on the account")
-		http.Error(w, "There are not enough funds on the account", http.StatusOK)
+		w.WriteHeader(http.StatusOK)
+		return
 	}
 	if err != nil {
 		s.log.Error(err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	s.log.Info("Successful request processing")
-	http.Error(w, "Successful request processing", http.StatusOK)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {

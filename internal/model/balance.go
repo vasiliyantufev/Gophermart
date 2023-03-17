@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type Balance struct {
 	ID        int       `json:"id"`
@@ -11,8 +14,8 @@ type Balance struct {
 }
 
 type BalanceUser struct {
-	Current   float64
-	Withdrawn float64
+	Current   sql.NullFloat64
+	Withdrawn sql.NullFloat64
 }
 
 type BalanceWithdraw struct {
@@ -21,7 +24,7 @@ type BalanceWithdraw struct {
 }
 
 type BalanceWithdrawals struct {
-	Order        int
+	Order       int
 	Sum         float64
 	ProcessedAt time.Time
 }

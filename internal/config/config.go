@@ -11,8 +11,6 @@ type Config struct {
 	DatabaseUri          string    `env:"DATABASE_URI" envDefault:"host=localhost port=5432 user=postgres password=myPassword dbname=gophermart sslmode=disable"`
 	AccrualSystemAddress string    `env:"ACCRUAL_SYSTEM_ADDRESS"`
 	LogLevel             log.Level `env:"DEBUG_LEVEL" envDefault:"debug"`
-	SessionKey           string    `env:"SESSION_KEY" envDefault:"secret"`
-	TokenKey             string    `env:"TOKEN_KEY"   envDefault:"Q4RZDVti48qAsDw8u3NFLRScGyTMpbZ8tbA7Ubs8YJTZHMNBvw6vtCVrXbSHt5V1O-zf8OR35tbkApuri-TrHA"`
 	RateLimit            int       `env:"RATE_LIMIT"`
 }
 
