@@ -9,7 +9,7 @@ import (
 
 type Balancer interface {
 	GetBalance(userId int) (*model.BalanceUser, error)
-	Accrue(userId int, orderID *model.OrderBody) error
+	Accrue(userId int, orderID *model.OrderResponseAccrual) error
 	CheckBalance(userId int, withdraw *model.BalanceWithdraw) error
 	WithDraw(userId int, withdraw *model.BalanceWithdraw) error
 	WithDrawals(userId int) ([]model.BalanceWithdrawals, error)
@@ -39,7 +39,7 @@ func (b *Balance) GetBalance(userId int) (*model.BalanceUser, error) {
 	return balanceUser, nil
 }
 
-func (b *Balance) Accrue(userId int, orderID *model.OrderBody) error {
+func (b *Balance) Accrue(userId int, orderID *model.OrderResponseAccrual) error {
 
 	var id int
 	return b.db.Pool.QueryRow(

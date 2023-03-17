@@ -74,7 +74,7 @@ func (a accrual) makeGetRequest(id int) {
 
 	ctx := context.Background()
 	var body []byte
-	var orderID *model.OrderBody
+	var orderID *model.OrderResponseAccrual
 
 	urlOrder := a.urlPath + "/" + strconv.Itoa(id)
 	r, err := http.Get(urlOrder)
@@ -95,7 +95,7 @@ func (a accrual) makeGetRequest(id int) {
 
 }
 
-func (a accrual) CheckOrder(orderID *model.OrderBody, ctx context.Context) error {
+func (a accrual) CheckOrder(orderID *model.OrderResponseAccrual, ctx context.Context) error {
 
 	o, _ := a.orderRepository.FindByOrderID(orderID.Order)
 	if o == nil {

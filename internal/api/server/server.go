@@ -184,10 +184,10 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 	timeNow := time.Now()
 	user := r.Context().Value("UserCtx").(*model.TokenUser)
 
-	order := &model.Order{
+	order := &model.OrderDB{
 		UserID:        user.UserID,
 		OrderID:       OrderID,
-		CurrentStatus: string(statuses.New),
+		CurrentStatus: statuses.New,
 		CreatedAt:     timeNow,
 		UpdatedAt:     timeNow,
 	}

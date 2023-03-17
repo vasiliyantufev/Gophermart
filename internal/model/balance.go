@@ -24,7 +24,7 @@ type BalanceWithdraw struct {
 }
 
 type BalanceWithdrawals struct {
-	Order       int
-	Sum         float64
-	ProcessedAt time.Time
+	Order       int       `json:"id"`
+	Sum         float64   `json:"sum"`
+	ProcessedAt time.Time `json:"processed_at"`
 }

@@ -1,19 +1,18 @@
 package order
 
 import (
-	"github.com/sirupsen/logrus"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
 	"time"
 )
 
 type Servicer interface {
-	Create(order *model.Order) error
-	Update(orderID *model.OrderBody) error
-	FindByLoginAndID(id int, user *model.User) (*model.Order, error)
-	FindByID(id int) (*model.Order, error)
-	GetOrders(userId int) ([]model.Order, error)
-	CheckOrder(orderID *model.OrderBody) error
+	Create(order *model.OrderDB) error
+	Update(orderID *model.OrderResponseAccrual) error
+	FindByLoginAndID(id int, user *model.User) (*model.OrderDB, error)
+	FindByID(id int) (*model.OrderDB, error)
+	GetOrders(userId int) ([]model.OrderDB, error)
+	CheckOrder(orderID *model.OrderResponseAccrual) error
 }
 
 type Order struct {
@@ -26,7 +25,7 @@ func New(db *database.DB) *Order {
 	}
 }
 
-func (o *Order) Create(order *model.Order) error {
+func (o *Order) Create(order *model.OrderDB) error {
 
 	return o.db.Pool.QueryRow(
 		"INSERT INTO orders (user_id, order_id, current_status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5) RETURNING id",
@@ -38,16 +37,16 @@ func (o *Order) Create(order *model.Order) error {
 	).Scan(&order.ID)
 }
 
-func (o *Order) Update(orderID *model.OrderBody) error {
+func (o *Order) Update(orderID *model.OrderResponseAccrual) error {
 
 	var id int
 	return o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING id;",
 		orderID.Order, orderID.Status, time.Now()).Scan(&id)
 }
 
-func (o *Order) FindByOrderIDAndUserID(orderId int, userId int) (*model.Order, error) {
+func (o *Order) FindByOrderIDAndUserID(orderId int, userId int) (*model.OrderDB, error) {
 
-	order := &model.Order{}
+	order := &model.OrderDB{}
 
 	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1 and user_id=$2", orderId, userId).Scan(
 		&order.ID,
@@ -62,9 +61,9 @@ func (o *Order) FindByOrderIDAndUserID(orderId int, userId int) (*model.Order, e
 	return order, nil
 }
 
-func (o *Order) FindByOrderID(orderId int) (*model.Order, error) {
+func (o *Order) FindByOrderID(orderId int) (*model.OrderDB, error) {
 
-	order := &model.Order{}
+	order := &model.OrderDB{}
 
 	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1", orderId).Scan(
 		&order.ID,
@@ -79,12 +78,10 @@ func (o *Order) FindByOrderID(orderId int) (*model.Order, error) {
 	return order, nil
 }
 
-func (o *Order) GetOrders(userId int) ([]model.OrderResponse, error) {
+func (o *Order) GetOrders(userId int) ([]model.OrdersResponseGophermart, error) {
 
-	logrus.Info(userId)
-
-	var orders []model.OrderResponse
-	var order model.OrderResponse
+	var orders []model.OrdersResponseGophermart
+	var order model.OrdersResponseGophermart
 
 	query := "SELECT orders.order_id as number, " +
 		"orders.current_status as status, " +
@@ -94,8 +91,6 @@ func (o *Order) GetOrders(userId int) ([]model.OrderResponse, error) {
 		"LEFT JOIN balance ON balance.order_id = orders.order_id " +
 		"where orders.user_id = $1 " +
 		"GROUP BY number, status, uploaded_at"
-
-	logrus.Info(query)
 
 	rows, err := o.db.Pool.Query(query, userId)
 	if err != nil {
@@ -112,10 +107,10 @@ func (o *Order) GetOrders(userId int) ([]model.OrderResponse, error) {
 	return orders, nil
 }
 
-func (o *Order) GetOrdersToAccrual() ([]model.Order, error) {
+func (o *Order) GetOrdersToAccrual() ([]model.OrderDB, error) {
 
-	var orders []model.Order
-	var order model.Order
+	var orders []model.OrderDB
+	var order model.OrderDB
 
 	query := "SELECT * FROM orders where current_status != 'INVALID' and current_status != 'PROCESSED'"
 
