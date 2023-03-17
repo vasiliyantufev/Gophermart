@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
 	"time"
 )
 
@@ -21,8 +22,8 @@ type OrderResponse struct {
 	UploadedAt time.Time     `json:"uploaded_at"`
 }
 
-type OrderID struct {
+type OrderBody struct {
 	Order   int
-	Status  string
+	Status  statuses.Statuses
 	Accrual int
 }

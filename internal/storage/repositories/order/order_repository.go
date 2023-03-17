@@ -9,11 +9,11 @@ import (
 
 type Servicer interface {
 	Create(order *model.Order) error
-	Update(orderID *model.OrderID) error
+	Update(orderID *model.OrderBody) error
 	FindByLoginAndID(id int, user *model.User) (*model.Order, error)
 	FindByID(id int) (*model.Order, error)
 	GetOrders(userId int) ([]model.Order, error)
-	CheckOrder(orderID *model.OrderID) error
+	CheckOrder(orderID *model.OrderBody) error
 }
 
 type Order struct {
@@ -38,7 +38,7 @@ func (o *Order) Create(order *model.Order) error {
 	).Scan(&order.ID)
 }
 
-func (o *Order) Update(orderID *model.OrderID) error {
+func (o *Order) Update(orderID *model.OrderBody) error {
 
 	var id int
 	return o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING id;",

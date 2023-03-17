@@ -9,8 +9,9 @@ import (
 
 type Balancer interface {
 	GetBalance(userId int) (*model.BalanceUser, error)
-	Accrue(userId int, orderID *model.OrderID) error
-	WithDraw(userId int, wd *model.BalanceWithdraw) error
+	Accrue(userId int, orderID *model.OrderBody) error
+	CheckBalance(userId int, withdraw *model.BalanceWithdraw) error
+	WithDraw(userId int, withdraw *model.BalanceWithdraw) error
 	WithDrawals(userId int) ([]model.BalanceWithdrawals, error)
 }
 
@@ -38,7 +39,7 @@ func (b *Balance) GetBalance(userId int) (*model.BalanceUser, error) {
 	return balanceUser, nil
 }
 
-func (b *Balance) Accrue(userId int, orderID *model.OrderID) error {
+func (b *Balance) Accrue(userId int, orderID *model.OrderBody) error {
 
 	var id int
 	return b.db.Pool.QueryRow(
@@ -50,8 +51,7 @@ func (b *Balance) Accrue(userId int, orderID *model.OrderID) error {
 	).Scan(&id)
 }
 
-func (b *Balance) WithDraw(userId int, wd *model.BalanceWithdraw) error {
-
+func (b *Balance) CheckBalance(userId int, withdraw *model.BalanceWithdraw) error {
 	var sum float64
 	err := b.db.Pool.QueryRow("select sum(delta) as balance from balance where user_id = $1", userId).Scan(
 		&sum,
@@ -60,16 +60,19 @@ func (b *Balance) WithDraw(userId int, wd *model.BalanceWithdraw) error {
 		return err
 	}
 
-	if sum < wd.Sum {
+	if sum < withdraw.Sum {
 		return errors.ErrNotFunds
 	}
+	return nil
+}
 
+func (b *Balance) WithDraw(userId int, withdraw *model.BalanceWithdraw) error {
 	var id int
 	return b.db.Pool.QueryRow(
 		"INSERT INTO balance (user_id, order_id, delta, created_at) VALUES ($1, $2, $3, $4) RETURNING id",
 		userId,
-		wd.Order,
-		wd.Sum,
+		withdraw.Order,
+		withdraw.Sum,
 		time.Now(),
 	).Scan(&id)
 }

@@ -5,7 +5,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	_ "github.com/gorilla/sessions"
 	"github.com/sirupsen/logrus"
-	"github.com/vasiliyantufev/gophermart/internal/api"
+	"github.com/vasiliyantufev/gophermart/internal/api/accrual"
+	"github.com/vasiliyantufev/gophermart/internal/api/server"
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"os/signal"
@@ -25,8 +26,8 @@ func main() {
 	}
 	defer db.Close()
 
-	server := api.NewServer(log, cfg, db)
-	accrual := api.NewAccrual(log, cfg)
+	server := server.NewServer(log, cfg, db)
+	accrual := accrual.NewAccrual(log, cfg)
 
 	r := chi.NewRouter()
 	r.Mount("/", server.Route())
@@ -38,5 +39,5 @@ func main() {
 	accrual.StartWorkers(ctx, accrual)
 
 	<-ctx.Done()
-	log.Println("gophermart shutdown on signal with:", ctx.Err())
+	log.Error("gophermart shutdown on signal with:", ctx.Err())
 }

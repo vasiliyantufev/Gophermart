@@ -3,6 +3,6 @@ package errors
 import "errors"
 
 var (
-	ErrNoRowsInResultSet = errors.New("sql: no rows in result set")
-	ErrNotFunds          = errors.New("There are not enough funds on the account")
+	ErrNotFunds      = errors.New("There are not enough funds on the account")
+	ErrNotRegistered = errors.New("Order is not registered in the billing system")
 )

@@ -1,4 +1,4 @@
-package api
+package server
 
 import (
 	"context"
@@ -10,12 +10,12 @@ import (
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
 	"github.com/vasiliyantufev/gophermart/internal/service"
-	"github.com/vasiliyantufev/gophermart/internal/storage/balance"
 	"github.com/vasiliyantufev/gophermart/internal/storage/errors"
-	"github.com/vasiliyantufev/gophermart/internal/storage/order"
+	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/balance"
+	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/order"
+	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/token"
+	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/user"
 	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
-	"github.com/vasiliyantufev/gophermart/internal/storage/token"
-	"github.com/vasiliyantufev/gophermart/internal/storage/user"
 	"io"
 	"net/http"
 	"strconv"
@@ -289,12 +289,19 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("UserCtx").(*model.TokenUser)
 
-	err := s.balanceRepository.WithDraw(user.UserID, withdraw)
-	if err == errors.ErrNotFunds {
-		s.log.Info("There are not enough funds on the account")
-		w.WriteHeader(http.StatusOK)
+	err := s.balanceRepository.CheckBalance(user.UserID, withdraw)
+	if err != nil {
+		if err == errors.ErrNotFunds {
+			s.log.Info("There are not enough funds on the account")
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	err = s.balanceRepository.WithDraw(user.UserID, withdraw)
 	if err != nil {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
