@@ -182,17 +182,17 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	timeNow := time.Now()
-	user := r.Context().Value("UserCtx").(*model.TokenUser)
+	userID := r.Context().Value("UserIDCtx").(int)
 
 	order := &model.OrderDB{
-		UserID:        user.UserID,
+		UserID:        userID,
 		OrderID:       OrderID,
 		CurrentStatus: statuses.New,
 		CreatedAt:     timeNow,
 		UpdatedAt:     timeNow,
 	}
 
-	o, err := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, user.UserID)
+	o, err := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, userID)
 	if o != nil {
 		s.log.Error("Order number has already been uploaded by this user")
 		w.WriteHeader(http.StatusOK)
@@ -217,9 +217,9 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
-	user := r.Context().Value("UserCtx").(*model.TokenUser)
+	userID := r.Context().Value("UserIDCtx").(int)
 
-	orderList, err := s.orderRepository.GetOrders(user.UserID)
+	orderList, err := s.orderRepository.GetOrders(userID)
 	if err != nil {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusNoContent)
@@ -240,15 +240,16 @@ func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.log.Info("Successful request processing")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
 
 func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
-	user := r.Context().Value("UserCtx").(*model.TokenUser)
+	userID := r.Context().Value("UserIDCtx").(int)
 
-	balance, err := s.balanceRepository.GetBalance(user.UserID)
+	balance, err := s.balanceRepository.GetBalance(userID)
 	if err != nil {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -263,6 +264,7 @@ func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.log.Info("Successful request processing")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
@@ -287,9 +289,9 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		withdraw.Sum = -withdraw.Sum
 	}
 
-	user := r.Context().Value("UserCtx").(*model.TokenUser)
+	userID := r.Context().Value("UserIDCtx").(int)
 
-	err := s.balanceRepository.CheckBalance(user.UserID, withdraw)
+	err := s.balanceRepository.CheckBalance(userID, withdraw)
 	if err != nil {
 		if err == errors.ErrNotFunds {
 			s.log.Info("There are not enough funds on the account")
@@ -301,7 +303,7 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.balanceRepository.WithDraw(user.UserID, withdraw)
+	err = s.balanceRepository.WithDraw(userID, withdraw)
 	if err != nil {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -314,9 +316,9 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 
-	user := r.Context().Value("UserCtx").(*model.TokenUser)
+	userID := r.Context().Value("UserIDCtx").(int)
 
-	withDrawals, err := s.balanceRepository.WithDrawals(user.UserID)
+	withDrawals, err := s.balanceRepository.WithDrawals(userID)
 	if withDrawals == nil {
 		s.log.Error(err)
 		http.Error(w, "No write-offs", http.StatusNoContent)
@@ -334,6 +336,7 @@ func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.log.Info("Successful request processing")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
 }
@@ -364,7 +367,7 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 
 		s.log.Info("User authenticated")
 
-		ctx := context.WithValue(r.Context(), "UserCtx", user)
+		ctx := context.WithValue(r.Context(), "UserIDCtx", user.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

@@ -50,11 +50,11 @@ func (t Token) Generate(length int) string {
 	return hex.EncodeToString(b)
 }
 
-func (t *Token) Validate(token string) (bool, *model.TokenUser, error) {
+func (t *Token) Validate(token string) (bool, *model.Token, error) {
 
 	currentTime := time.Now()
 
-	tokenUser := &model.TokenUser{}
+	tokenUser := &model.Token{}
 	if err := t.db.Pool.QueryRow("SELECT users.id, users.login, token.token, token.deleted_at FROM token "+
 		"INNER JOIN users ON users.id = token.user_id  where token.token = $1", token).Scan(
 		&tokenUser.UserID,
