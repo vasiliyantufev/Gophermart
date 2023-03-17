@@ -22,7 +22,7 @@ func main() {
 
 	db, err := database.New(cfg)
 	if err != nil {
-		log.Error(err)
+		log.Fatal(err)
 	} else {
 		defer db.Close()
 		db.CreateTablesMigration()

@@ -3,13 +3,14 @@ package database
 import (
 	"context"
 	"database/sql"
-	log "github.com/sirupsen/logrus"
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
+	log "github.com/sirupsen/logrus"
 
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 )
 
