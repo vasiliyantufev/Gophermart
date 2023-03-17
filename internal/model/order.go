@@ -1,7 +1,6 @@
 package model
 
 import (
-	"database/sql"
 	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
 	"time"
 )
@@ -18,7 +17,7 @@ type OrderDB struct {
 type OrdersResponseGophermart struct {
 	Number     int               `json:"number"`
 	Status     statuses.Statuses `json:"status"`
-	Accrual    sql.NullInt64     `json:"accrual"`
+	Accrual    *int              `json:"accrual,omitempty"`
 	UploadedAt time.Time         `json:"uploaded_at"`
 }
 

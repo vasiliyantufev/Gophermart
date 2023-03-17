@@ -9,12 +9,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-type UserPayload struct {
-	ID    int    `json:"id"`
-	Login string `json:"login"`
-}
-
-type Request struct {
+type UserRequest struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
 }

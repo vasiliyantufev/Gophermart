@@ -83,7 +83,7 @@ func (s *server) Route() *chi.Mux {
 
 func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 
-	req := &model.Request{}
+	req := &model.UserRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		s.log.Error(err)
 		http.Error(w, "Invalid request format", http.StatusBadRequest)
@@ -121,7 +121,7 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 
-	req := &model.Request{}
+	req := &model.UserRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusBadRequest)

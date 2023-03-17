@@ -8,11 +8,11 @@ import (
 )
 
 type Balancer interface {
-	GetBalance(userId int) (*model.BalanceUser, error)
+	GetBalance(userId int) (*model.BalanceUserResponse, error)
 	Accrue(userId int, orderID *model.OrderResponseAccrual) error
 	CheckBalance(userId int, withdraw *model.BalanceWithdraw) error
 	WithDraw(userId int, withdraw *model.BalanceWithdraw) error
-	WithDrawals(userId int) ([]model.BalanceWithdrawals, error)
+	WithDrawals(userId int) ([]model.BalanceWithdrawalsResponse, error)
 }
 
 type Balance struct {
@@ -25,9 +25,9 @@ func New(db *database.DB) *Balance {
 	}
 }
 
-func (b *Balance) GetBalance(userId int) (*model.BalanceUser, error) {
+func (b *Balance) GetBalance(userId int) (*model.BalanceUserResponse, error) {
 
-	balanceUser := &model.BalanceUser{}
+	balanceUser := &model.BalanceUserResponse{}
 
 	if err := b.db.Pool.QueryRow("select sum(delta) as current, sum(case when delta < 0 then delta end) as withdrawn "+
 		"from balance where user_id = $1", userId).Scan(
@@ -77,10 +77,10 @@ func (b *Balance) WithDraw(userId int, withdraw *model.BalanceWithdraw) error {
 	).Scan(&id)
 }
 
-func (b *Balance) WithDrawals(userId int) ([]model.BalanceWithdrawals, error) {
+func (b *Balance) WithDrawals(userId int) ([]model.BalanceWithdrawalsResponse, error) {
 
-	var withdraw model.BalanceWithdrawals
-	var withdrawals []model.BalanceWithdrawals
+	var withdraw model.BalanceWithdrawalsResponse
+	var withdrawals []model.BalanceWithdrawalsResponse
 
 	query := "SELECT order_id, delta, created_at FROM balance " +
 		"WHERE delta < 0 and user_id = $1 ORDER BY created_at"
