@@ -22,9 +22,11 @@ func main() {
 
 	db, err := database.New(cfg)
 	if err != nil {
-		log.Fatal(err)
+		log.Error(err)
+	} else {
+		defer db.Close()
+		db.CreateTablesMigration()
 	}
-	defer db.Close()
 
 	server := server.NewServer(log, cfg, db)
 	accrual := accrual.NewAccrual(log, cfg)

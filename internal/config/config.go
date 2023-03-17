@@ -11,7 +11,7 @@ type Config struct {
 	DatabaseUri          string    `env:"DATABASE_URI" envDefault:"host=localhost port=5432 user=postgres password=myPassword dbname=gophermart sslmode=disable"`
 	AccrualSystemAddress string    `env:"ACCRUAL_SYSTEM_ADDRESS"`
 	LogLevel             log.Level `env:"DEBUG_LEVEL" envDefault:"debug"`
-	RateLimit            int       `env:"RATE_LIMIT"`
+	//	RateLimit            int       `env:"RATE_LIMIT"`
 }
 
 func New() *Config {
@@ -21,7 +21,7 @@ func New() *Config {
 	flag.StringVar(&cfg.Address, "a", "localhost:8080", "Адрес и порт запуска сервиса")
 	flag.StringVar(&cfg.DatabaseUri, "d", "", "Адрес подключения к базе данных")
 	flag.StringVar(&cfg.AccrualSystemAddress, "r", "", "Адрес системы расчёта начислений")
-	flag.IntVar(&cfg.RateLimit, "l", 2, "Количество одновременно исходящих запросов на сервер")
+	//	flag.IntVar(&cfg.RateLimit, "l", 2, "Количество одновременно исходящих запросов на сервер")
 	flag.Parse()
 
 	err := env.Parse(&cfg)

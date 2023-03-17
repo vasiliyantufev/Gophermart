@@ -7,6 +7,9 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+
 	_ "github.com/lib/pq"
 )
 
@@ -40,4 +43,21 @@ func (db DB) Ping() error {
 		return err
 	}
 	return nil
+}
+
+func (db DB) CreateTablesMigration() {
+
+	driver, err := postgres.WithInstance(db.Pool, &postgres.Config{})
+	if err != nil {
+		log.Error(err)
+	}
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://./migrations",
+		"postgres", driver)
+	if err != nil {
+		log.Error(err)
+	}
+	if err = m.Up(); err != nil {
+		log.Error(err)
+	}
 }

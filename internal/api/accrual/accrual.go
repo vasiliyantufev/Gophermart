@@ -67,7 +67,6 @@ func (a accrual) putOrdersWorker(ctx context.Context) {
 			}
 		}
 	}
-
 }
 
 func (a accrual) makeGetRequest(id int) {
@@ -109,15 +108,16 @@ func (a accrual) CheckOrder(orderID *model.OrderResponseAccrual, ctx context.Con
 		}
 	}
 	if orderID.Status == statuses.Processed {
-		user := ctx.Value("userPayloadCtx").(*model.User)
+		userID := ctx.Value("UserIDCtx").(int)
 		err := a.orderRepository.Update(orderID)
 		if err != nil {
 			a.log.Error(err)
 		}
-		err = a.balanceRepository.Accrue(user.ID, orderID)
+		err = a.balanceRepository.Accrue(userID, orderID)
 		if err != nil {
 			a.log.Error(err)
 		}
 	}
 	return nil
+
 }
