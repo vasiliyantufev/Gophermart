@@ -1,6 +1,7 @@
 package order
 
 import (
+	"github.com/sirupsen/logrus"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
 	"time"
@@ -104,17 +105,23 @@ func (o *Order) FindByOrderID(orderId int) (*model.Order, error) {
 
 func (o *Order) GetOrders(userId int) ([]model.OrderResponse, error) {
 
+	logrus.Info(userId)
+
 	var orders []model.OrderResponse
 	var order model.OrderResponse
 
 	query := "SELECT orders.order_id as number, " +
-		"sum(balance.delta) as accrual, " +
 		"orders.current_status as status, " +
+		//"COALESCE(sum(balance.delta), 0) as accrual, " +
+		"sum(balance.delta) as accrual, " +
 		"orders.updated_at as uploaded_at " +
 		"from orders " +
-		"INNER JOIN balance ON balance.order_id = orders.order_id " +
+		"LEFT JOIN balance ON balance.order_id = orders.order_id " +
 		"where orders.user_id = $1 " +
-		"GROUP BY number, orders.id, status, uploaded_at"
+		//"GROUP BY number, uploaded_at"
+		"GROUP BY number, status, uploaded_at"
+
+	logrus.Info(query)
 
 	rows, err := o.db.Pool.Query(query, userId)
 	if err != nil {
@@ -122,7 +129,7 @@ func (o *Order) GetOrders(userId int) ([]model.OrderResponse, error) {
 	}
 
 	for rows.Next() {
-		if err = rows.Scan(&order.Number, &order.Status, &order.Accrual, &order.UploadedAt); err != nil {
+		if err = rows.Scan(&order.Number, &order.Status /**/, &order.Accrual, &order.UploadedAt); err != nil {
 			return nil, err
 		}
 		orders = append(orders, order)

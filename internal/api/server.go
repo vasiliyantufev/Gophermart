@@ -218,7 +218,13 @@ func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := r.Context().Value("UserCtx").(*model.TokenUser)
 
-	orderList, _ := s.orderRepository.GetOrders(user.UserID)
+	orderList, err := s.orderRepository.GetOrders(user.UserID)
+	if err != nil {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	if orderList == nil {
 		s.log.Error("No data to answer")
 		w.WriteHeader(http.StatusNoContent)

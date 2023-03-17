@@ -1,6 +1,7 @@
 package model
 
 import (
+	"database/sql"
 	"time"
 )
 
@@ -14,10 +15,10 @@ type Order struct {
 }
 
 type OrderResponse struct {
-	Number     int       `json:"number"`
-	Status     string    `json:"status"`
-	Accrual    int       `json:"-"`
-	UploadedAt time.Time `json:"uploaded_at"`
+	Number     int           `json:"number"`
+	Status     string        `json:"status"`
+	Accrual    sql.NullInt64 `json:"-"`
+	UploadedAt time.Time     `json:"uploaded_at"`
 }
 
 type OrderID struct {
