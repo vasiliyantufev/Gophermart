@@ -79,7 +79,8 @@ func (b *Balance) WithDrawals(userId int) ([]model.BalanceWithdrawals, error) {
 	var withdraw model.BalanceWithdrawals
 	var withdrawals []model.BalanceWithdrawals
 
-	query := "SELECT order_id, delta, created_at FROM balance WHERE delta < 0 and user_id = $1 ORDER BY created_at"
+	query := "SELECT order_id, delta, created_at FROM balance " +
+		"WHERE delta < 0 and user_id = $1 ORDER BY created_at"
 
 	rows, err := b.db.Pool.Query(query, userId)
 	if err != nil {

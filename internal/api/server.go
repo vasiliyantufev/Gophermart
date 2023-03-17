@@ -319,10 +319,16 @@ func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 
-	s.log.Info(withDrawals)
+	resp, err := json.Marshal(withDrawals)
+	if err != nil {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	s.log.Info("Successful request processing")
-	http.Error(w, "Successful request processing", http.StatusOK)
+	w.WriteHeader(http.StatusOK)
+	w.Write(resp)
 }
 
 func (s *server) authMiddleware(next http.Handler) http.Handler {
