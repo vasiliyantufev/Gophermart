@@ -25,7 +25,7 @@ func main() {
 		log.Fatal(err)
 	} else {
 		defer db.Close()
-		db.CreateTablesMigration()
+		db.CreateTablesMigration(cfg)
 	}
 
 	server := server.NewServer(log, cfg, db)

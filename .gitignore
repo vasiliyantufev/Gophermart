@@ -12,8 +12,11 @@
 *.out
 
 # Binaries
-cmd/gophermart/main
+bin/main
 cmd/gophermart/gophermart
+gophermarttest
+cmd/gophermart/main
+
 
 # Dependency directories (remove the comment below to include it)
 vendor/
@@ -21,3 +24,4 @@ vendor/
 # IDEs directories
 .idea
 .vscode
+

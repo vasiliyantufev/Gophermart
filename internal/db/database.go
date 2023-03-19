@@ -46,14 +46,16 @@ func (db DB) Ping() error {
 	return nil
 }
 
-func (db DB) CreateTablesMigration() {
+func (db DB) CreateTablesMigration(cfg *config.Config) {
 
 	driver, err := postgres.WithInstance(db.Pool, &postgres.Config{})
 	if err != nil {
 		log.Error(err)
 	}
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://./migrations",
+		//"file://./migrations",
+		cfg.RootPath+"migrations",
+
 		"postgres", driver)
 	if err != nil {
 		log.Error(err)
