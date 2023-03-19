@@ -22,14 +22,18 @@ func New(db *database.DB) *User {
 	}
 }
 
-func (u *User) Create(user *model.User) error {
-
-	return u.db.Pool.QueryRow(
+func (u *User) Create(user *model.User) (int, error) {
+	var id int
+	if err := u.db.Pool.QueryRow(
 		"INSERT INTO users (login, password, created_at) VALUES ($1, $2, $3) RETURNING id",
 		user.Login,
 		user.Password,
 		time.Now(),
-	).Scan(&user.ID)
+	).Scan(&id); err != nil {
+		return id, err
+	}
+
+	return id, nil
 }
 
 func (u *User) FindByID(id int) (*model.User, error) {

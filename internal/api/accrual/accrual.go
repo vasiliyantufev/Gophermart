@@ -47,7 +47,8 @@ func (a accrual) StartWorkers(ctx context.Context, accruar *accrual) {
 
 func (a accrual) putOrdersWorker(ctx context.Context) {
 
-	ticker := time.NewTicker(0)
+	// TODO: change ticker time
+	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 	for {
 		select {

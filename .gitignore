@@ -12,11 +12,10 @@
 *.out
 
 # Binaries
-bin/main
+bin/
+cmd/gophermart/main
 cmd/gophermart/gophermart
 gophermarttest
-cmd/gophermart/main
-
 
 # Dependency directories (remove the comment below to include it)
 vendor/

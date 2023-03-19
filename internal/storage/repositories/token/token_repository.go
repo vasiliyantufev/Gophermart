@@ -27,7 +27,7 @@ func New(db *database.DB) *Token {
 	}
 }
 
-func (t Token) Create(user *model.User) (string, error) {
+func (t Token) Create(userID int) (string, error) {
 
 	token := t.Generate(lengthToken)
 	currentTime := time.Now()
@@ -35,7 +35,7 @@ func (t Token) Create(user *model.User) (string, error) {
 	var id int
 	return token, t.db.Pool.QueryRow(
 		"INSERT INTO token (user_id, token, created_at, deleted_at) VALUES ($1, $2, $3, $4) RETURNING id",
-		user.ID,
+		userID,
 		token,
 		currentTime,
 		currentTime.Add(time.Hour+lifetimeToken),

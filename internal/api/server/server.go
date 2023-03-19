@@ -108,7 +108,7 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := s.tokenRepository.Create(u)
+	token, err := s.tokenRepository.Create(u.ID)
 	if err != nil {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -116,6 +116,7 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Authorization", token)
+	s.log.Info("Successful login")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -147,13 +148,21 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.userRepository.Create(user)
+	userID, err := s.userRepository.Create(user)
 	if err != nil {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	token, err := s.tokenRepository.Create(userID)
+	if err != nil {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Authorization", token)
 	s.log.Info("Successful registration")
 	w.WriteHeader(http.StatusOK)
 }
