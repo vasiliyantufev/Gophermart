@@ -15,7 +15,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 )
 
@@ -49,7 +48,7 @@ func (a accrual) putOrdersWorker(ctx context.Context) {
 
 	// TODO: change ticker time
 	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
+	//defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
@@ -63,20 +62,20 @@ func (a accrual) putOrdersWorker(ctx context.Context) {
 			}
 
 			for _, order := range orders {
-				a.log.Info("Get order: " + strconv.Itoa(order.OrderID))
-				go a.makeGetRequest(order.ID)
+				a.log.Info("Get order: " + order.OrderID)
+				go a.makeGetRequest(order.OrderID)
 			}
 		}
 	}
 }
 
-func (a accrual) makeGetRequest(id int) {
+func (a accrual) makeGetRequest(id string) {
 
 	ctx := context.Background()
 	var body []byte
 	var orderID *model.OrderResponseAccrual
 
-	urlOrder := a.urlPath + "/" + strconv.Itoa(id)
+	urlOrder := a.urlPath + "/api/orders/" + id
 	r, err := http.Get(urlOrder)
 	if err != nil {
 		return
@@ -103,14 +102,13 @@ func (a accrual) CheckOrder(orderID *model.OrderResponseAccrual, ctx context.Con
 	}
 
 	if orderID.Status == statuses.Invalid {
-		err := a.orderRepository.Update(orderID)
+		_, err := a.orderRepository.Update(orderID)
 		if err != nil {
 			a.log.Error(err)
 		}
 	}
 	if orderID.Status == statuses.Processed {
-		userID := ctx.Value("UserIDCtx").(int)
-		err := a.orderRepository.Update(orderID)
+		userID, err := a.orderRepository.Update(orderID)
 		if err != nil {
 			a.log.Error(err)
 		}

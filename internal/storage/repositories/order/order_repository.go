@@ -37,11 +37,19 @@ func (o *Order) Create(order *model.OrderDB) error {
 	).Scan(&order.ID)
 }
 
-func (o *Order) Update(orderID *model.OrderResponseAccrual) error {
+func (o *Order) Update(orderID *model.OrderResponseAccrual) (int, error) {
 
-	var id int
-	return o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING id;",
-		orderID.Order, orderID.Status, time.Now()).Scan(&id)
+	//var id int
+	//return o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING user_id;",
+	//	orderID.Order, orderID.Status, time.Now()).Scan(&id)
+
+	var userID int
+	if err := o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING user_id;",
+		orderID.Order, orderID.Status, time.Now()).Scan(&userID); err != nil {
+		return userID, err
+	}
+
+	return userID, nil
 }
 
 func (o *Order) FindByOrderIDAndUserID(orderId string, userId int) (*model.OrderDB, error) {
@@ -113,6 +121,7 @@ func (o *Order) GetOrdersToAccrual() ([]model.OrderDB, error) {
 	var order model.OrderDB
 
 	query := "SELECT * FROM orders where current_status != 'INVALID' and current_status != 'PROCESSED'"
+	//query := "SELECT * FROM orders"
 
 	rows, err := o.db.Pool.Query(query)
 	if err != nil {
