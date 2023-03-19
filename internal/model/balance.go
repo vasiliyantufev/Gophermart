@@ -5,7 +5,7 @@ import (
 )
 
 type BalanceWithdraw struct {
-	Order int
+	Order string
 	Sum   float64
 }
 
@@ -15,7 +15,7 @@ type BalanceUserResponse struct {
 }
 
 type BalanceWithdrawalsResponse struct {
-	Order       int       `json:"id"`
+	Order       string    `json:"id"`
 	Sum         float64   `json:"sum"`
 	ProcessedAt time.Time `json:"processed_at"`
 }

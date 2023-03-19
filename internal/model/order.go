@@ -8,21 +8,21 @@ import (
 type OrderDB struct {
 	ID            int               `json:"id"`
 	UserID        int               `json:"user_id"`
-	OrderID       int               `json:"order_number"`
+	OrderID       string            `json:"order_number"`
 	CurrentStatus statuses.Statuses `json:"current_status"`
 	CreatedAt     time.Time         `json:"created_at"`
 	UpdatedAt     time.Time         `json:"updated_at"`
 }
 
 type OrdersResponseGophermart struct {
-	Number     int               `json:"number"`
+	Number     string            `json:"number"`
 	Status     statuses.Statuses `json:"status"`
 	Accrual    *int              `json:"accrual,omitempty"`
 	UploadedAt time.Time         `json:"uploaded_at"`
 }
 
 type OrderResponseAccrual struct {
-	Order   int               `json:"order"`
+	Order   string            `json:"order"`
 	Status  statuses.Statuses `json:"status"`
 	Accrual int               `json:"accrual"`
 }

@@ -44,7 +44,7 @@ func (o *Order) Update(orderID *model.OrderResponseAccrual) error {
 		orderID.Order, orderID.Status, time.Now()).Scan(&id)
 }
 
-func (o *Order) FindByOrderIDAndUserID(orderId int, userId int) (*model.OrderDB, error) {
+func (o *Order) FindByOrderIDAndUserID(orderId string, userId int) (*model.OrderDB, error) {
 
 	order := &model.OrderDB{}
 
@@ -61,7 +61,7 @@ func (o *Order) FindByOrderIDAndUserID(orderId int, userId int) (*model.OrderDB,
 	return order, nil
 }
 
-func (o *Order) FindByOrderID(orderId int) (*model.OrderDB, error) {
+func (o *Order) FindByOrderID(orderId string) (*model.OrderDB, error) {
 
 	order := &model.OrderDB{}
 

@@ -177,14 +177,14 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	OrderID, err := strconv.Atoi(strings.TrimSpace(string(resp)))
+	Order, err := strconv.Atoi(strings.TrimSpace(string(resp)))
 	if err != nil {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if validOrder := service.ValidLuhn(OrderID); validOrder == false {
+	if validOrder := service.ValidLuhn(Order); validOrder == false {
 		s.log.Error("Invalid order number format")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
@@ -192,6 +192,8 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 	timeNow := time.Now()
 	userID := r.Context().Value("UserIDCtx").(int)
+
+	OrderID := strconv.Itoa(Order)
 
 	order := &model.OrderDB{
 		UserID:        userID,
