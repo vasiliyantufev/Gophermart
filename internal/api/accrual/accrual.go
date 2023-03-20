@@ -73,7 +73,6 @@ func (a accrual) putOrdersWorker(ctx context.Context) {
 
 func (a accrual) makeGetRequest(id string) {
 
-	ctx := context.Background()
 	var body []byte
 	var orderID *model.OrderResponseAccrual
 
@@ -92,11 +91,11 @@ func (a accrual) makeGetRequest(id string) {
 		return
 	}
 
-	a.CheckOrder(orderID, ctx)
+	a.CheckOrder(orderID)
 
 }
 
-func (a accrual) CheckOrder(orderID *model.OrderResponseAccrual, ctx context.Context) error {
+func (a accrual) CheckOrder(orderID *model.OrderResponseAccrual) error {
 
 	o, _ := a.orderRepository.FindByOrderID(orderID.Order)
 	if o == nil {
@@ -120,5 +119,4 @@ func (a accrual) CheckOrder(orderID *model.OrderResponseAccrual, ctx context.Con
 		}
 	}
 	return nil
-
 }
