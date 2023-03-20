@@ -48,7 +48,7 @@ func (a accrual) putOrdersWorker(ctx context.Context) {
 
 	// TODO: change ticker time
 	ticker := time.NewTicker(1 * time.Second)
-	//defer ticker.Stop()
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
