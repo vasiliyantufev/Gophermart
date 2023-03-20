@@ -39,7 +39,7 @@ func (b *Balance) GetBalance(userId int) (*model.BalanceUserResponse, error) {
 	return balanceUser, nil
 }
 
-func (b *Balance) Accrue(userId int, orderID *model.OrderResponseAccrual) error {
+func (b *Balance) Accrue(userId int, orderID model.OrderResponseAccrual) error {
 
 	var id int
 	return b.db.Pool.QueryRow(

@@ -37,15 +37,16 @@ func (o *Order) Create(order *model.OrderDB) error {
 	).Scan(&order.ID)
 }
 
-func (o *Order) Update(orderID *model.OrderResponseAccrual) (int, error) {
+func (o *Order) Update(orderID model.OrderResponseAccrual) (int, error) {
 
 	//var id int
 	//return o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING user_id;",
 	//	orderID.Order, orderID.Status, time.Now()).Scan(&id)
 
 	var userID int
-	if err := o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING user_id;",
-		orderID.Order, orderID.Status, time.Now()).Scan(&userID); err != nil {
+	//if err := o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING user_id;",
+	if err := o.db.Pool.QueryRow("UPDATE orders SET current_status = $1, updated_at = $2 WHERE order_id = $3 RETURNING user_id;",
+		orderID.Status, time.Now(), orderID.Order).Scan(&userID); err != nil {
 		return userID, err
 	}
 

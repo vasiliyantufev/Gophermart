@@ -17,12 +17,12 @@ type OrderDB struct {
 type OrdersResponseGophermart struct {
 	Number     string            `json:"number"`
 	Status     statuses.Statuses `json:"status"`
-	Accrual    *int              `json:"accrual,omitempty"`
+	Accrual    *float64          `json:"accrual,omitempty"`
 	UploadedAt time.Time         `json:"uploaded_at"`
 }
 
 type OrderResponseAccrual struct {
 	Order   string            `json:"order"`
 	Status  statuses.Statuses `json:"status"`
-	Accrual int               `json:"accrual"`
+	Accrual float64           `json:"accrual"`
 }

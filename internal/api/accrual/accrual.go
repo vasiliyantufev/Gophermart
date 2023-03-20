@@ -38,11 +38,13 @@ func NewAccrual(log *logrus.Logger, cfg *config.Config, db *database.DB, orderRe
 
 func (a accrual) StartWorkers(ctx context.Context, accruar *accrual) {
 
-	a.urlPath = "http://" + a.cfg.AccrualSystemAddress
 	accruar.putOrdersWorker(ctx)
+
 }
 
 func (a accrual) putOrdersWorker(ctx context.Context) {
+
+	//a.log.Info("putOrdersWorker")
 
 	// TODO: change ticker time
 	ticker := time.NewTicker(1 * time.Second)
@@ -69,28 +71,38 @@ func (a accrual) putOrdersWorker(ctx context.Context) {
 func (a accrual) makeGetRequest(id string) {
 
 	var body []byte
-	var orderID *model.OrderResponseAccrual
+	var orderID model.OrderResponseAccrual
 
-	urlOrder := a.urlPath + "/api/orders/" + id
+	urlOrder := a.cfg.AccrualSystemAddress + "/api/orders/" + id
+
+	//a.log.Info(urlOrder)
+
 	r, err := http.Get(urlOrder)
 	if err != nil {
+		a.log.Error(err)
 		return
 	}
 
 	body, err = io.ReadAll(r.Body)
 	if err != nil {
+		a.log.Error(err)
 		return
 	}
-	err = json.Unmarshal(body, orderID)
+
+	//stop
+	err = json.Unmarshal(body, &orderID)
 	if err != nil {
+		a.log.Error(err)
 		return
 	}
 
 	a.CheckOrder(orderID)
-
 }
 
-func (a accrual) CheckOrder(orderID *model.OrderResponseAccrual) error {
+func (a accrual) CheckOrder(orderID model.OrderResponseAccrual) error {
+
+	a.log.Info("CheckOrder")
+	a.log.Info(orderID)
 
 	o, _ := a.orderRepository.FindByOrderID(orderID.Order)
 	if o == nil {
@@ -98,22 +110,23 @@ func (a accrual) CheckOrder(orderID *model.OrderResponseAccrual) error {
 	}
 
 	if orderID.Status == statuses.Invalid {
-		userID, err := a.orderRepository.Update(orderID)
+		_, err := a.orderRepository.Update(orderID)
 		if err != nil {
 			a.log.Error(err)
 		}
-		a.log.Info("Get order: " + string(userID))
+		a.log.Info("Update order: " + orderID.Order)
 	}
 	if orderID.Status == statuses.Processed {
 		userID, err := a.orderRepository.Update(orderID)
 		if err != nil {
 			a.log.Error(err)
 		}
-		a.log.Info("Get order: " + string(userID))
 		err = a.balanceRepository.Accrue(userID, orderID)
 		if err != nil {
 			a.log.Error(err)
 		}
+		a.log.Info("Update order: " + orderID.Order)
+		a.log.Info(userID)
 	}
 	return nil
 }
