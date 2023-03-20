@@ -16,18 +16,18 @@ type Servicer interface {
 }
 
 type Order struct {
-	db *database.DB
+	Db *database.DB
 }
 
 func New(db *database.DB) *Order {
 	return &Order{
-		db: db,
+		Db: db,
 	}
 }
 
 func (o *Order) Create(order *model.OrderDB) error {
 
-	return o.db.Pool.QueryRow(
+	return o.Db.Pool.QueryRow(
 		"INSERT INTO orders (user_id, order_id, current_status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5) RETURNING id",
 		order.UserID,
 		order.OrderID,
@@ -44,7 +44,7 @@ func (o *Order) Update(orderID *model.OrderResponseAccrual) (int, error) {
 	//	orderID.Order, orderID.Status, time.Now()).Scan(&id)
 
 	var userID int
-	if err := o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING user_id;",
+	if err := o.Db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING user_id;",
 		orderID.Order, orderID.Status, time.Now()).Scan(&userID); err != nil {
 		return userID, err
 	}
@@ -56,7 +56,7 @@ func (o *Order) FindByOrderIDAndUserID(orderId string, userId int) (*model.Order
 
 	order := &model.OrderDB{}
 
-	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1 and user_id=$2", orderId, userId).Scan(
+	if err := o.Db.Pool.QueryRow("SELECT * FROM orders where order_id=$1 and user_id=$2", orderId, userId).Scan(
 		&order.ID,
 		&order.UserID,
 		&order.OrderID,
@@ -73,7 +73,7 @@ func (o *Order) FindByOrderID(orderId string) (*model.OrderDB, error) {
 
 	order := &model.OrderDB{}
 
-	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1", orderId).Scan(
+	if err := o.Db.Pool.QueryRow("SELECT * FROM orders where order_id=$1", orderId).Scan(
 		&order.ID,
 		&order.UserID,
 		&order.OrderID,
@@ -100,7 +100,7 @@ func (o *Order) GetOrders(userId int) ([]model.OrdersResponseGophermart, error) 
 		"where orders.user_id = $1 " +
 		"GROUP BY number, status, uploaded_at"
 
-	rows, err := o.db.Pool.Query(query, userId)
+	rows, err := o.Db.Pool.Query(query, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -121,9 +121,8 @@ func (o *Order) GetOrdersToAccrual() ([]model.OrderDB, error) {
 	var order model.OrderDB
 
 	query := "SELECT * FROM orders where current_status != 'INVALID' and current_status != 'PROCESSED'"
-	//query := "SELECT * FROM orders"
 
-	rows, err := o.db.Pool.Query(query)
+	rows, err := o.Db.Pool.Query(query)
 	if err != nil {
 		return nil, err
 	}

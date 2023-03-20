@@ -9,6 +9,10 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/api/server"
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
+	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/balance"
+	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/order"
+	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/token"
+	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/user"
 	"os/signal"
 	"syscall"
 )
@@ -28,8 +32,13 @@ func main() {
 		db.CreateTablesMigration(cfg)
 	}
 
-	server := server.NewServer(log, cfg, db)
-	accrual := accrual.NewAccrual(log, cfg, db)
+	userRepository := user.New(db)
+	orderRepository := order.New(db)
+	balanceRepository := balance.New(db)
+	tokenRepository := token.New(db)
+
+	accrual := accrual.NewAccrual(log, cfg, db, orderRepository, balanceRepository)
+	server := server.NewServer(log, cfg, db, userRepository, orderRepository, balanceRepository, tokenRepository)
 
 	r := chi.NewRouter()
 	r.Mount("/", server.Route())

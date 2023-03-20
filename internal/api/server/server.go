@@ -45,16 +45,12 @@ type server struct {
 	handlers          ServerHandlers
 }
 
-func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB) *server {
-	return &server{log: *logger, cfg: cfg, db: db}
+func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB, userRepository *user.User, orderRepository *order.Order, balanceRepository *balance.Balance, tokenRepository *token.Token) *server {
+	return &server{log: *logger, cfg: cfg, db: db, userRepository: userRepository, orderRepository: orderRepository,
+		balanceRepository: balanceRepository, tokenRepository: tokenRepository}
 }
 
 func (s *server) StartServer(r *chi.Mux, cfg *config.Config, log *logrus.Logger) {
-
-	s.userRepository = user.New(s.db)
-	s.orderRepository = order.New(s.db)
-	s.balanceRepository = balance.New(s.db)
-	s.tokenRepository = token.New(s.db)
 
 	log.Infof("Starting application %v\n", cfg.Address)
 	if con := http.ListenAndServe(cfg.Address, r); con != nil {
