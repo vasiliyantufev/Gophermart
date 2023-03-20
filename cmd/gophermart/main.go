@@ -29,7 +29,7 @@ func main() {
 	}
 
 	server := server.NewServer(log, cfg, db)
-	accrual := accrual.NewAccrual(log, cfg)
+	accrual := accrual.NewAccrual(log, cfg, db)
 
 	r := chi.NewRouter()
 	r.Mount("/", server.Route())

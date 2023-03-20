@@ -45,7 +45,7 @@ type server struct {
 	handlers          ServerHandlers
 }
 
-func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB /*storeSession *sessions.CookieStore,, jwt service.JWT*/) *server {
+func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB) *server {
 	return &server{log: *logger, cfg: cfg, db: db}
 }
 

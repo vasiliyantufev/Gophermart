@@ -33,8 +33,8 @@ type accrual struct {
 	urlPath           string
 }
 
-func NewAccrual(log *logrus.Logger, cfg *config.Config) *accrual {
-	return &accrual{log: log, cfg: cfg}
+func NewAccrual(log *logrus.Logger, cfg *config.Config, db *database.DB) *accrual {
+	return &accrual{log: log, cfg: cfg, db: db}
 }
 
 func (a accrual) StartWorkers(ctx context.Context, accruar *accrual) {
