@@ -13,7 +13,6 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/order"
 	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
 	"io"
-	"log"
 	"net/http"
 	"time"
 )
@@ -51,17 +50,16 @@ func (a accrual) putOrdersWorker(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("accrual stopped by ctx")
+			a.log.Error("accrual stopped by ctx")
 			return
 		case <-ticker.C:
 			orders, err := a.orderRepository.GetOrdersToAccrual()
 			if err != nil {
-				log.Println(err)
+				a.log.Error(err)
 				return
 			}
 
 			for _, order := range orders {
-				a.log.Info("Get order: " + order.OrderID)
 				go a.makeGetRequest(order.OrderID)
 			}
 		}
@@ -100,16 +98,18 @@ func (a accrual) CheckOrder(orderID *model.OrderResponseAccrual) error {
 	}
 
 	if orderID.Status == statuses.Invalid {
-		_, err := a.orderRepository.Update(orderID)
+		userID, err := a.orderRepository.Update(orderID)
 		if err != nil {
 			a.log.Error(err)
 		}
+		a.log.Info("Get order: " + string(userID))
 	}
 	if orderID.Status == statuses.Processed {
 		userID, err := a.orderRepository.Update(orderID)
 		if err != nil {
 			a.log.Error(err)
 		}
+		a.log.Info("Get order: " + string(userID))
 		err = a.balanceRepository.Accrue(userID, orderID)
 		if err != nil {
 			a.log.Error(err)

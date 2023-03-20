@@ -246,7 +246,7 @@ func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.log.Info("Successful request processing")
+	s.log.Info("Successful request - get orders")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
@@ -270,7 +270,7 @@ func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.log.Info("Successful request processing")
+	s.log.Info("Successful request - get balance")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
@@ -317,7 +317,7 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.log.Info("Successful request processing")
+	s.log.Info("Successful request - create withdraw")
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -342,7 +342,7 @@ func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.log.Info("Successful request processing")
+	s.log.Info("Successful request - get withdrawals")
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write(resp)
