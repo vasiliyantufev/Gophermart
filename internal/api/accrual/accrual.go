@@ -34,12 +34,14 @@ type accrual struct {
 }
 
 func NewAccrual(log *logrus.Logger, cfg *config.Config, db *database.DB) *accrual {
-	return &accrual{log: log, cfg: cfg, db: db}
+	return &accrual{log: log, cfg: cfg, db: db /**/}
 }
 
 func (a accrual) StartWorkers(ctx context.Context, accruar *accrual) {
 
 	a.orderRepository = order.New(a.db)
+	a.balanceRepository = balance.New(a.db)
+
 	a.urlPath = "http://" + a.cfg.AccrualSystemAddress
 	accruar.putOrdersWorker(ctx)
 }
