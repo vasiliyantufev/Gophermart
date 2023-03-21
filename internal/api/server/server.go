@@ -328,12 +328,14 @@ func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 
 	withDrawals, err := s.balanceRepository.WithDrawals(userID)
 	if withDrawals == nil {
-		s.log.Error(err)
-		http.Error(w, "No write-offs", http.StatusNoContent)
+		s.log.Error("No write-offs")
+		w.WriteHeader(http.StatusNoContent)
+		return
 	}
 	if err != nil {
 		s.log.Error(err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	resp, err := json.Marshal(withDrawals)
