@@ -285,20 +285,12 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	o, _ := s.orderRepository.FindByOrderID(withdraw.Order)
-	if o == nil {
-		s.log.Error(errors.ErrNotRegistered)
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	Order, err := strconv.Atoi(strings.TrimSpace(string(withdraw.Order)))
 	if err != nil {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-
 	if validOrder := service.ValidLuhn(Order); validOrder == false {
 		s.log.Error("Invalid order number format")
 		w.WriteHeader(http.StatusUnprocessableEntity)
