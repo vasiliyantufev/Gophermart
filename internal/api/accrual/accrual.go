@@ -21,7 +21,7 @@ type Accruer interface {
 	StartWorkers(ctx context.Context)
 	putOrdersWorker(ctx context.Context, urlPath string)
 	makeGetRequest(client *resty.Client, id int, url string)
-	CheckOrder(orderID model.OrderResponseAccrual) error
+	checkOrder(orderID model.OrderResponseAccrual) error
 }
 
 type accrual struct {

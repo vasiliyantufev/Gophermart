@@ -305,9 +305,9 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//if withdraw.Sum > 0 {
-	//	withdraw.Sum = -withdraw.Sum
-	//}
+	if withdraw.Sum > 0 {
+		withdraw.Sum = -withdraw.Sum
+	}
 
 	userID := r.Context().Value("UserIDCtx").(int)
 
