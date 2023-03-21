@@ -21,6 +21,7 @@ type Accruer interface {
 	StartWorkers(ctx context.Context)
 	putOrdersWorker(ctx context.Context, urlPath string)
 	makeGetRequest(client *resty.Client, id int, url string)
+	CheckOrder(orderID model.OrderResponseAccrual) error
 }
 
 type accrual struct {
@@ -39,12 +40,9 @@ func NewAccrual(log *logrus.Logger, cfg *config.Config, db *database.DB, orderRe
 func (a accrual) StartWorkers(ctx context.Context, accruar *accrual) {
 
 	accruar.putOrdersWorker(ctx)
-
 }
 
 func (a accrual) putOrdersWorker(ctx context.Context) {
-
-	//a.log.Info("putOrdersWorker")
 
 	// TODO: change ticker time
 	ticker := time.NewTicker(1 * time.Second)
@@ -75,8 +73,6 @@ func (a accrual) makeGetRequest(id string) {
 
 	urlOrder := a.cfg.AccrualSystemAddress + "/api/orders/" + id
 
-	//a.log.Info(urlOrder)
-
 	r, err := http.Get(urlOrder)
 	if err != nil {
 		a.log.Error(err)
@@ -89,19 +85,18 @@ func (a accrual) makeGetRequest(id string) {
 		return
 	}
 
-	//stop
 	err = json.Unmarshal(body, &orderID)
 	if err != nil {
 		a.log.Error(err)
 		return
 	}
 
-	a.CheckOrder(orderID)
+	a.checkOrder(orderID)
 }
 
-func (a accrual) CheckOrder(orderID model.OrderResponseAccrual) error {
+func (a accrual) checkOrder(orderID model.OrderResponseAccrual) error {
 
-	a.log.Info("CheckOrder")
+	a.log.Info("Check order")
 	a.log.Info(orderID)
 
 	o, _ := a.orderRepository.FindByOrderID(orderID.Order)

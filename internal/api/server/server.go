@@ -287,18 +287,33 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 
 	o, _ := s.orderRepository.FindByOrderID(withdraw.Order)
 	if o == nil {
-		s.log.Error("Invalid order number")
+		s.log.Error(errors.ErrNotRegistered)
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	Order, err := strconv.Atoi(strings.TrimSpace(string(withdraw.Order)))
+	if err != nil {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if validOrder := service.ValidLuhn(Order); validOrder == false {
+		s.log.Error("Invalid order number format")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
-	if withdraw.Sum > 0 {
-		withdraw.Sum = -withdraw.Sum
-	}
+	//if withdraw.Sum > 0 {
+	//	withdraw.Sum = -withdraw.Sum
+	//}
 
 	userID := r.Context().Value("UserIDCtx").(int)
 
-	err := s.balanceRepository.CheckBalance(userID, withdraw)
+	s.log.Error("createWithdrawHandler")
+
+	err = s.balanceRepository.CheckBalance(userID, withdraw)
 	if err != nil {
 		if err == errors.ErrNotFunds {
 			s.log.Info("There are not enough funds on the account")
