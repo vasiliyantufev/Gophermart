@@ -305,18 +305,12 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if withdraw.Sum > 0 {
-		withdraw.Sum = -withdraw.Sum
-	}
-
 	userID := r.Context().Value("UserIDCtx").(int)
-
-	s.log.Error("createWithdrawHandler")
 
 	err = s.balanceRepository.CheckBalance(userID, withdraw)
 	if err != nil {
 		if err == errors.ErrNotFunds {
-			s.log.Info("There are not enough funds on the account")
+			s.log.Info(err)
 			w.WriteHeader(http.StatusOK)
 			return
 		}

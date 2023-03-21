@@ -52,15 +52,17 @@ func (b *Balance) Accrue(userId int, orderID model.OrderResponseAccrual) error {
 }
 
 func (b *Balance) CheckBalance(userId int, withdraw *model.BalanceWithdraw) error {
-	var sum float64
+	var sum *float64
 	err := b.db.Pool.QueryRow("select sum(delta) as balance from balance where user_id = $1", userId).Scan(
 		&sum,
 	)
+	if sum == nil {
+		return errors.ErrNotBalance
+	}
 	if err != nil {
 		return err
 	}
-
-	if sum < withdraw.Sum {
+	if *sum < withdraw.Sum {
 		return errors.ErrNotFunds
 	}
 	return nil
@@ -72,7 +74,7 @@ func (b *Balance) WithDraw(userId int, withdraw *model.BalanceWithdraw) error {
 		"INSERT INTO balance (user_id, order_id, delta, created_at) VALUES ($1, $2, $3, $4) RETURNING id",
 		userId,
 		withdraw.Order,
-		withdraw.Sum,
+		-withdraw.Sum,
 		time.Now(),
 	).Scan(&id)
 }
