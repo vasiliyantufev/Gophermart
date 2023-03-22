@@ -377,9 +377,10 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		userID := Ctx("UserIDCtx")
 		s.log.Info("User authenticated")
 
-		ctx := context.WithValue(r.Context(), Ctx("UserIDCtx"), user.UserID)
+		ctx := context.WithValue(r.Context(), userID, user.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
