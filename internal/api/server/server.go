@@ -189,7 +189,8 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	timeNow := time.Now()
-	userID := r.Context().Value("UserIDCtx").(int)
+	//userID := r.Context().Value("UserIDCtx").(int)
+	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
 
 	OrderID := strconv.Itoa(Order)
 
@@ -226,7 +227,8 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
-	userID := r.Context().Value("UserIDCtx").(int)
+	//userID := r.Context().Value("UserIDCtx").(int)
+	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
 
 	orderList, err := s.orderRepository.GetOrders(userID)
 	if err != nil {
@@ -256,7 +258,8 @@ func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
-	userID := r.Context().Value("UserIDCtx").(int)
+	//userID := r.Context().Value("UserIDCtx").(int)
+	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
 
 	balance, err := s.balanceRepository.GetBalance(userID)
 	if err != nil {
@@ -299,7 +302,8 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("UserIDCtx").(int)
+	//userID := r.Context().Value("UserIDCtx").(int)
+	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
 
 	err = s.balanceRepository.CheckBalance(userID, withdraw)
 	if err != nil {
@@ -326,7 +330,8 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 
-	userID := r.Context().Value("UserIDCtx").(int)
+	//userID := r.Context().Value("UserIDCtx").(int)
+	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
 
 	withDrawals, err := s.balanceRepository.WithDrawals(userID)
 	if withDrawals == nil {
@@ -377,10 +382,9 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		userID := Ctx("UserIDCtx")
 		s.log.Info("User authenticated")
 
-		ctx := context.WithValue(r.Context(), userID, user.UserID)
+		ctx := context.WithValue(r.Context(), Ctx("UserIDCtx"), user.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
