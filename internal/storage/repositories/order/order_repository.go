@@ -107,6 +107,9 @@ func (o *Order) GetOrders(userID int) ([]model.OrdersResponseGophermart, error) 
 		}
 		orders = append(orders, order)
 	}
+	if rows.Err() != nil {
+		return nil, err
+	}
 
 	return orders, nil
 }
@@ -130,6 +133,9 @@ func (o *Order) GetOrdersToAccrual() ([]model.OrderDB, error) {
 			return nil, err
 		}
 		orders = append(orders, order)
+	}
+	if rows.Err() != nil {
+		return nil, err
 	}
 
 	return orders, nil
