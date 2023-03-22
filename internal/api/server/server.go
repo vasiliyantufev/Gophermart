@@ -34,6 +34,8 @@ type ServerHandlers interface {
 	authMiddleware(w http.ResponseWriter, r *http.Request)
 }
 
+type Ctx string
+
 type server struct {
 	log               logrus.Logger
 	cfg               *config.Config
@@ -377,7 +379,7 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 
 		s.log.Info("User authenticated")
 
-		ctx := context.WithValue(r.Context(), "UserIDCtx", user.UserID)
+		ctx := context.WithValue(r.Context(), Ctx("UserIDCtx"), user.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
