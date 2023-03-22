@@ -94,7 +94,7 @@ func (o *Order) GetOrders(userId int) ([]model.OrdersResponseGophermart, error) 
 
 	query := "SELECT orders.order_id as number, " +
 		"orders.current_status as status, " +
-		"sum(balance.delta) as accrual, " +
+		"sum(balance.accrue) as accrual, " +
 		"orders.updated_at as uploaded_at " +
 		"from orders " +
 		"LEFT JOIN balance ON balance.order_id = orders.order_id " +
