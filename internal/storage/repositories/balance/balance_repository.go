@@ -101,6 +101,9 @@ func (b *Balance) WithDrawals(userID int) ([]model.BalanceWithdrawalsResponse, e
 		}
 		withdrawals = append(withdrawals, withdraw)
 	}
+	if rows.Err() != nil {
+		return nil, err
+	}
 
 	return withdrawals, nil
 }
