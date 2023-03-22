@@ -15,7 +15,7 @@ type BalanceUserResponse struct {
 }
 
 type BalanceWithdrawalsResponse struct {
-	Order       string    `json:"id"`
+	Order       string    `json:"order"`
 	Sum         float64   `json:"sum"`
 	ProcessedAt time.Time `json:"processed_at"`
 }
