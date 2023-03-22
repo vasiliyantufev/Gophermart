@@ -22,7 +22,7 @@ func New() *Config {
 
 	//flag.StringVar(&cfg.Address, "a", "localhost:8088", "Адрес и порт запуска сервиса")
 	flag.StringVar(&cfg.Address, "a", "localhost:8080", "Адрес и порт запуска сервиса")
-	//flag.StringVar(&cfg.DatabaseUri, "d", "host=localhost port=5432 user=postgres password=myPassword dbname=gophermart sslmode=disable", "Адрес подключения к базе данных")
+	//flag.StringVar(&cfg.DatabaseURI, "d", "host=localhost port=5432 user=postgres password=myPassword dbname=gophermart sslmode=disable", "Адрес подключения к базе данных")
 	flag.StringVar(&cfg.DatabaseURI, "d", "postgresql://postgres:postgres@postgres:5432/postgres?sslmode=disable", "Адрес подключения к базе данных")
 	//flag.StringVar(&cfg.AccrualSystemAddress, "r", "localhost:8080", "Адрес и порт запуска системы расчёта начислений")
 	flag.StringVar(&cfg.AccrualSystemAddress, "r", "", "Адрес и порт запуска системы расчёта начислений")
