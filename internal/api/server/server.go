@@ -37,7 +37,7 @@ type ServerHandlers interface {
 type Ctx string
 
 type server struct {
-	log               logrus.Logger
+	log               *logrus.Logger
 	cfg               *config.Config
 	db                *database.DB
 	userRepository    *user.User
@@ -48,7 +48,7 @@ type server struct {
 }
 
 func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB, userRepository *user.User, orderRepository *order.Order, balanceRepository *balance.Balance, tokenRepository *token.Token) *server {
-	return &server{log: *logger, cfg: cfg, db: db, userRepository: userRepository, orderRepository: orderRepository,
+	return &server{log: logger, cfg: cfg, db: db, userRepository: userRepository, orderRepository: orderRepository,
 		balanceRepository: balanceRepository, tokenRepository: tokenRepository}
 }
 
