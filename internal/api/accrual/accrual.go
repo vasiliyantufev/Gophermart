@@ -80,6 +80,7 @@ func (a accrual) makeGetRequest(id string) {
 	}
 
 	body, err = io.ReadAll(r.Body)
+	defer r.Body.Close()
 	if err != nil {
 		a.log.Error(err)
 		return

@@ -19,7 +19,7 @@ type DB struct {
 }
 
 func New(cfg *config.Config) (*DB, error) {
-	pool, err := sql.Open("postgres", cfg.DatabaseUri)
+	pool, err := sql.Open("postgres", cfg.DatabaseURI)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -23,6 +23,8 @@ import (
 	"time"
 )
 
+type UserCtx string
+
 type ServerHandlers interface {
 	loginHandler(w http.ResponseWriter, r *http.Request)
 	registerHandler(w http.ResponseWriter, r *http.Request)
@@ -137,7 +139,7 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 		Password: hashedPassword,
 	}
 
-	u, err := s.userRepository.FindByLogin(user.Login)
+	u, _ := s.userRepository.FindByLogin(user.Login)
 	if u != nil {
 		s.log.Error("Login is already taken")
 		w.WriteHeader(http.StatusConflict)
@@ -180,14 +182,14 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if validOrder := service.ValidLuhn(Order); validOrder == false {
+	if validOrder := service.ValidLuhn(Order); !validOrder {
 		s.log.Error("Invalid order number format")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
 	timeNow := time.Now()
-	userID := r.Context().Value("UserIDCtx").(int)
+	userID := r.Context().Value("UserCtx").(int)
 
 	OrderID := strconv.Itoa(Order)
 
@@ -199,7 +201,7 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:     timeNow,
 	}
 
-	o, err := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, userID)
+	o, _ := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, userID)
 	if o != nil {
 		s.log.Error("Order number has already been uploaded by this user")
 		w.WriteHeader(http.StatusOK)
@@ -224,7 +226,7 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
-	userID := r.Context().Value("UserIDCtx").(int)
+	userID := r.Context().Value("UserCtx").(int)
 
 	orderList, err := s.orderRepository.GetOrders(userID)
 	if err != nil {
@@ -254,7 +256,7 @@ func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
-	userID := r.Context().Value("UserIDCtx").(int)
+	userID := r.Context().Value("UserCtx").(int)
 
 	balance, err := s.balanceRepository.GetBalance(userID)
 	if err != nil {
@@ -291,13 +293,13 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if validOrder := service.ValidLuhn(Order); validOrder == false {
+	if validOrder := service.ValidLuhn(Order); !validOrder {
 		s.log.Error("Invalid order number format")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
 	}
 
-	userID := r.Context().Value("UserIDCtx").(int)
+	userID := r.Context().Value("UserCtx").(int)
 
 	err = s.balanceRepository.CheckBalance(userID, withdraw)
 	if err != nil {
@@ -324,7 +326,7 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 
-	userID := r.Context().Value("UserIDCtx").(int)
+	userID := r.Context().Value("UserCtx").(int)
 
 	withDrawals, err := s.balanceRepository.WithDrawals(userID)
 	if withDrawals == nil {
@@ -377,7 +379,7 @@ func (s *server) authMiddleware(next http.Handler) http.Handler {
 
 		s.log.Info("User authenticated")
 
-		ctx := context.WithValue(r.Context(), "UserIDCtx", user.UserID)
+		ctx := context.WithValue(r.Context(), UserCtx("UserCtxID"), user.UserID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

@@ -9,10 +9,10 @@ import (
 type Servicer interface {
 	Create(order *model.OrderDB) error
 	Update(orderID *model.OrderResponseAccrual) error
-	FindByLoginAndID(id int, user *model.User) (*model.OrderDB, error)
-	FindByID(id int) (*model.OrderDB, error)
-	GetOrders(userId int) ([]model.OrderDB, error)
-	CheckOrder(orderID *model.OrderResponseAccrual) error
+	FindByOrderIDAndUserID(orderID string, userID int) (*model.OrderDB, error)
+	FindByOrderID(orderID string) (*model.OrderDB, error)
+	GetOrders(userID int) ([]model.OrdersResponseGophermart, error)
+	GetOrdersToAccrual() ([]model.OrderDB, error)
 }
 
 type Order struct {
@@ -39,12 +39,7 @@ func (o *Order) Create(order *model.OrderDB) error {
 
 func (o *Order) Update(orderID model.OrderResponseAccrual) (int, error) {
 
-	//var id int
-	//return o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING user_id;",
-	//	orderID.Order, orderID.Status, time.Now()).Scan(&id)
-
 	var userID int
-	//if err := o.db.Pool.QueryRow("UPDATE orders SET current_status = $2, updated_at = $3 WHERE id = $1 RETURNING user_id;",
 	if err := o.db.Pool.QueryRow("UPDATE orders SET current_status = $1, updated_at = $2 WHERE order_id = $3 RETURNING user_id;",
 		orderID.Status, time.Now(), orderID.Order).Scan(&userID); err != nil {
 		return userID, err
@@ -53,11 +48,11 @@ func (o *Order) Update(orderID model.OrderResponseAccrual) (int, error) {
 	return userID, nil
 }
 
-func (o *Order) FindByOrderIDAndUserID(orderId string, userId int) (*model.OrderDB, error) {
+func (o *Order) FindByOrderIDAndUserID(orderID string, userID int) (*model.OrderDB, error) {
 
 	order := &model.OrderDB{}
 
-	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1 and user_id=$2", orderId, userId).Scan(
+	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1 and user_id=$2", orderID, userID).Scan(
 		&order.ID,
 		&order.UserID,
 		&order.OrderID,
@@ -70,11 +65,11 @@ func (o *Order) FindByOrderIDAndUserID(orderId string, userId int) (*model.Order
 	return order, nil
 }
 
-func (o *Order) FindByOrderID(orderId string) (*model.OrderDB, error) {
+func (o *Order) FindByOrderID(orderID string) (*model.OrderDB, error) {
 
 	order := &model.OrderDB{}
 
-	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1", orderId).Scan(
+	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1", orderID).Scan(
 		&order.ID,
 		&order.UserID,
 		&order.OrderID,
@@ -87,7 +82,7 @@ func (o *Order) FindByOrderID(orderId string) (*model.OrderDB, error) {
 	return order, nil
 }
 
-func (o *Order) GetOrders(userId int) ([]model.OrdersResponseGophermart, error) {
+func (o *Order) GetOrders(userID int) ([]model.OrdersResponseGophermart, error) {
 
 	var orders []model.OrdersResponseGophermart
 	var order model.OrdersResponseGophermart
@@ -101,13 +96,13 @@ func (o *Order) GetOrders(userId int) ([]model.OrdersResponseGophermart, error) 
 		"where orders.user_id = $1 " +
 		"GROUP BY number, status, uploaded_at"
 
-	rows, err := o.db.Pool.Query(query, userId)
+	rows, err := o.db.Pool.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
 
 	for rows.Next() {
-		if err = rows.Scan(&order.Number, &order.Status /**/, &order.Accrual, &order.UploadedAt); err != nil {
+		if err = rows.Scan(&order.Number, &order.Status, &order.Accrual, &order.UploadedAt); err != nil {
 			return nil, err
 		}
 		orders = append(orders, order)
