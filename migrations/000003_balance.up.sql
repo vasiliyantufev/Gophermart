@@ -6,5 +6,5 @@ CREATE TABLE balance
 --     delta     float not null,
     accrue     float not null,
     withdraw   float not null,
-    create_at timestamp    not null
+    created_at timestamp    not null
 );
