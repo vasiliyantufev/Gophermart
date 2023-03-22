@@ -137,7 +137,7 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 		Password: hashedPassword,
 	}
 
-	u, err := s.userRepository.FindByLogin(user.Login)
+	u, _ := s.userRepository.FindByLogin(user.Login)
 	if u != nil {
 		s.log.Error("Login is already taken")
 		w.WriteHeader(http.StatusConflict)
@@ -180,7 +180,7 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if validOrder := service.ValidLuhn(Order); validOrder == false {
+	if validOrder := service.ValidLuhn(Order); !validOrder {
 		s.log.Error("Invalid order number format")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
@@ -199,7 +199,7 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:     timeNow,
 	}
 
-	o, err := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, userID)
+	o, _ := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, userID)
 	if o != nil {
 		s.log.Error("Order number has already been uploaded by this user")
 		w.WriteHeader(http.StatusOK)
@@ -291,7 +291,7 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if validOrder := service.ValidLuhn(Order); validOrder == false {
+	if validOrder := service.ValidLuhn(Order); !validOrder {
 		s.log.Error("Invalid order number format")
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		return
