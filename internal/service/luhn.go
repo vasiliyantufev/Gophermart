@@ -1,6 +1,5 @@
 package service
 
-// CalculateLuhn return the check number
 func CalculateLuhn(number int) int {
 	checkNumber := checksum(number)
 
@@ -10,7 +9,6 @@ func CalculateLuhn(number int) int {
 	return 10 - checkNumber
 }
 
-// ValidLuhn check number is valid or not based on Luhn algorithm
 func ValidLuhn(number int) bool {
 	return (number%10+checksum(number/10))%10 == 0
 }
@@ -21,7 +19,7 @@ func checksum(number int) int {
 	for i := 0; number > 0; i++ {
 		cur := number % 10
 
-		if i%2 == 0 { // even
+		if i%2 == 0 {
 			cur = cur * 2
 			if cur > 9 {
 				cur = cur%10 + cur/10

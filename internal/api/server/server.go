@@ -189,7 +189,6 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	timeNow := time.Now()
-	//userID := r.Context().Value("UserIDCtx").(int)
 	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
 
 	OrderID := strconv.Itoa(Order)
@@ -227,7 +226,6 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
-	//userID := r.Context().Value("UserIDCtx").(int)
 	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
 
 	orderList, err := s.orderRepository.GetOrders(userID)
@@ -258,7 +256,6 @@ func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 
-	//userID := r.Context().Value("UserIDCtx").(int)
 	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
 
 	balance, err := s.balanceRepository.GetBalance(userID)
@@ -302,7 +299,6 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//userID := r.Context().Value("UserIDCtx").(int)
 	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
 
 	err = s.balanceRepository.CheckBalance(userID, withdraw)
@@ -330,7 +326,6 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 
-	//userID := r.Context().Value("UserIDCtx").(int)
 	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
 
 	withDrawals, err := s.balanceRepository.WithDrawals(userID)

@@ -24,9 +24,6 @@ func main() {
 	log := logrus.New()
 	log.SetLevel(cfg.LogLevel)
 
-	//userID := server.Ctx("UserIDCtx")
-	//log.Fatal(userID)
-
 	db, err := database.New(cfg)
 	if err != nil {
 		log.Fatal(err)

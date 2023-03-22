@@ -7,9 +7,8 @@ import (
 )
 
 type Config struct {
-	Address     string `env:"RUN_ADDRESS"`
-	DatabaseURI string `env:"DATABASE_URI"`
-	//DatabaseUri          string    `env:"DATABASE_URI" envDefault:"postgresql://postgres:postgres@postgres:5432/postgres?sslmode=disable"`
+	Address              string    `env:"RUN_ADDRESS"`
+	DatabaseURI          string    `env:"DATABASE_URI"`
 	AccrualSystemAddress string    `env:"ACCRUAL_SYSTEM_ADDRESS"`
 	LogLevel             log.Level `env:"DEBUG_LEVEL" envDefault:"debug"`
 	RootPath             string    `env:"ROOT_PATH" envDefault:"file://./migrations"`
