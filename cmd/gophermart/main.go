@@ -18,7 +18,6 @@ import (
 )
 
 func main() {
-
 	cfg := config.New()
 
 	log := logrus.New()
