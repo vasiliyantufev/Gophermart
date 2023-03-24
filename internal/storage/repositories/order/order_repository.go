@@ -1,9 +1,10 @@
 package order
 
 import (
+	"time"
+
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
-	"time"
 )
 
 type Servicer interface {

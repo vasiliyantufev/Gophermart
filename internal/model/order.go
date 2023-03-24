@@ -1,8 +1,9 @@
 package model
 
 import (
-	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
 	"time"
+
+	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
 )
 
 type OrderDB struct {

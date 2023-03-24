@@ -1,10 +1,11 @@
 package balance
 
 import (
+	"time"
+
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
 	"github.com/vasiliyantufev/gophermart/internal/storage/errors"
-	"time"
 )
 
 type Balancer interface {

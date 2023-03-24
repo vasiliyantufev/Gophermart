@@ -3,8 +3,13 @@ package accrual
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"net/http"
+	"time"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
+
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
@@ -12,9 +17,6 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/balance"
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/order"
 	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
-	"io"
-	"net/http"
-	"time"
 )
 
 type Accruer interface {

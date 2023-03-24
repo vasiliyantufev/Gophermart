@@ -3,9 +3,10 @@ package token
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"time"
+
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
-	"time"
 )
 
 const lengthToken = 32

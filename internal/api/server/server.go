@@ -4,8 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	_errors "errors"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
+
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
@@ -16,11 +24,6 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/token"
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/user"
 	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
-	"io"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type ServerHandlers interface {
@@ -88,9 +91,9 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := s.userRepository.FindByLogin(req.Login)
+	userLogin, err := s.userRepository.FindByLogin(req.Login)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if _errors.Is(err, sql.ErrNoRows) {
 			s.log.Error("Invalid username")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -100,13 +103,13 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !service.CheckPasswordHash(req.Password, u.Password) {
+	if !service.CheckPasswordHash(req.Password, userLogin.Password) {
 		s.log.Error("Invalid username/password")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	token, err := s.tokenRepository.Create(u.ID)
+	token, err := s.tokenRepository.Create(userLogin.ID)
 	if err != nil {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -139,10 +142,15 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 		Password: hashedPassword,
 	}
 
-	u, _ := s.userRepository.FindByLogin(user.Login)
-	if u != nil {
+	userRegistered, err := s.userRepository.FindByLogin(user.Login)
+	if userRegistered != nil {
 		s.log.Error("Login is already taken")
 		w.WriteHeader(http.StatusConflict)
+		return
+	}
+	if err != nil && !_errors.Is(err, sql.ErrNoRows) {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -201,18 +209,30 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:     timeNow,
 	}
 
-	o, _ := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, userID)
-	if o != nil {
+	orderUploaded, err := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, userID)
+	if orderUploaded != nil {
 		s.log.Error("Order number has already been uploaded by this user")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	o, _ = s.orderRepository.FindByOrderID(order.OrderID)
-	if o != nil {
+	if err != nil && !_errors.Is(err, sql.ErrNoRows) {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	orderUploaded, err = s.orderRepository.FindByOrderID(order.OrderID)
+	if orderUploaded != nil {
 		s.log.Error("Order number has already been uploaded by another user")
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
+	if err != nil && !_errors.Is(err, sql.ErrNoRows) {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	err = s.orderRepository.Create(order)
 	if err != nil {
 		s.log.Error(err)
@@ -303,7 +323,7 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = s.balanceRepository.CheckBalance(userID, withdraw)
 	if err != nil {
-		if err == errors.ErrNotFunds {
+		if _errors.Is(err, errors.ErrNotFunds) {
 			s.log.Info(err)
 			w.WriteHeader(http.StatusOK)
 			return

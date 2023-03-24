@@ -2,9 +2,13 @@ package main
 
 import (
 	"context"
+	"os/signal"
+	"syscall"
+
 	"github.com/go-chi/chi/v5"
 	_ "github.com/gorilla/sessions"
 	"github.com/sirupsen/logrus"
+
 	"github.com/vasiliyantufev/gophermart/internal/api/accrual"
 	"github.com/vasiliyantufev/gophermart/internal/api/server"
 	"github.com/vasiliyantufev/gophermart/internal/config"
@@ -13,8 +17,6 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/order"
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/token"
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/user"
-	"os/signal"
-	"syscall"
 )
 
 func main() {
