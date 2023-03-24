@@ -143,14 +143,14 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userRegistered, err := s.userRepository.FindByLogin(user.Login)
-	if userRegistered != nil {
-		s.log.Error("Login is already taken")
-		w.WriteHeader(http.StatusConflict)
-		return
-	}
 	if err != nil && !_errors.Is(err, sql.ErrNoRows) {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if userRegistered != nil {
+		s.log.Error("Login is already taken")
+		w.WriteHeader(http.StatusConflict)
 		return
 	}
 
@@ -210,26 +210,26 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orderUploaded, err := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, userID)
+	if err != nil && !_errors.Is(err, sql.ErrNoRows) {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 	if orderUploaded != nil {
 		s.log.Error("Order number has already been uploaded by this user")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
+
+	orderUploaded, err = s.orderRepository.FindByOrderID(order.OrderID)
 	if err != nil && !_errors.Is(err, sql.ErrNoRows) {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	orderUploaded, err = s.orderRepository.FindByOrderID(order.OrderID)
 	if orderUploaded != nil {
 		s.log.Error("Order number has already been uploaded by another user")
 		w.WriteHeader(http.StatusConflict)
-		return
-	}
-	if err != nil && !_errors.Is(err, sql.ErrNoRows) {
-		s.log.Error(err)
-		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
