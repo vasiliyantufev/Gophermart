@@ -92,7 +92,10 @@ func (a accrual) makeGetRequest(id string) {
 		return
 	}
 
-	a.checkOrder(orderID)
+	err = a.checkOrder(orderID)
+	if err != nil {
+		a.log.Error(err)
+	}
 }
 
 func (a accrual) checkOrder(orderID model.OrderResponseAccrual) error {
@@ -107,18 +110,18 @@ func (a accrual) checkOrder(orderID model.OrderResponseAccrual) error {
 	if orderID.Status == statuses.Invalid {
 		_, err := a.orderRepository.Update(orderID)
 		if err != nil {
-			a.log.Error(err)
+			return err
 		}
 		a.log.Info("Update order: " + orderID.Order)
 	}
 	if orderID.Status == statuses.Processed {
 		userID, err := a.orderRepository.Update(orderID)
 		if err != nil {
-			a.log.Error(err)
+			return err
 		}
 		err = a.balanceRepository.Accrue(userID, orderID)
 		if err != nil {
-			a.log.Error(err)
+			return err
 		}
 		a.log.Info("Update order: " + orderID.Order)
 		a.log.Info(userID)
