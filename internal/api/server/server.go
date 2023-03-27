@@ -64,7 +64,6 @@ func (s *server) StartServer(r *chi.Mux, cfg *config.Config, log *logrus.Logger)
 }
 
 func (s *server) Route() *chi.Mux {
-
 	r := chi.NewRouter()
 
 	r.Route("/api/user", func(r chi.Router) {
