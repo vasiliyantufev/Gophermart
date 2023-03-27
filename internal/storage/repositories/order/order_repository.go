@@ -27,7 +27,6 @@ func New(db *database.DB) *Order {
 }
 
 func (o *Order) Create(order *model.OrderDB) error {
-
 	return o.db.Pool.QueryRow(
 		"INSERT INTO orders (user_id, order_id, current_status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5) RETURNING id",
 		order.UserID,
@@ -39,7 +38,6 @@ func (o *Order) Create(order *model.OrderDB) error {
 }
 
 func (o *Order) Update(orderID model.OrderResponseAccrual) (int, error) {
-
 	var userID int
 	if err := o.db.Pool.QueryRow("UPDATE orders SET current_status = $1, updated_at = $2 WHERE order_id = $3 RETURNING user_id;",
 		orderID.Status, time.Now(), orderID.Order).Scan(&userID); err != nil {
@@ -50,7 +48,6 @@ func (o *Order) Update(orderID model.OrderResponseAccrual) (int, error) {
 }
 
 func (o *Order) FindByOrderIDAndUserID(orderID string, userID int) (*model.OrderDB, error) {
-
 	order := &model.OrderDB{}
 
 	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1 and user_id=$2", orderID, userID).Scan(
@@ -67,7 +64,6 @@ func (o *Order) FindByOrderIDAndUserID(orderID string, userID int) (*model.Order
 }
 
 func (o *Order) FindByOrderID(orderID string) (*model.OrderDB, error) {
-
 	order := &model.OrderDB{}
 
 	if err := o.db.Pool.QueryRow("SELECT * FROM orders where order_id=$1", orderID).Scan(
@@ -84,7 +80,6 @@ func (o *Order) FindByOrderID(orderID string) (*model.OrderDB, error) {
 }
 
 func (o *Order) GetOrders(userID int) ([]model.OrdersResponseGophermart, error) {
-
 	var orders []model.OrdersResponseGophermart
 	var order model.OrdersResponseGophermart
 
@@ -116,7 +111,6 @@ func (o *Order) GetOrders(userID int) ([]model.OrdersResponseGophermart, error) 
 }
 
 func (o *Order) GetOrdersToAccrual() ([]model.OrderDB, error) {
-
 	var orders []model.OrderDB
 	var order model.OrderDB
 

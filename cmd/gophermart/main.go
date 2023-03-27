@@ -16,7 +16,7 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/balance"
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/order"
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/token"
-	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/user"
+	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/user
 )
 
 func main() {

@@ -47,7 +47,6 @@ func (db DB) Ping() error {
 }
 
 func (db DB) CreateTablesMigration(cfg *config.Config) {
-
 	driver, err := postgres.WithInstance(db.Pool, &postgres.Config{})
 	if err != nil {
 		log.Error(err)

@@ -29,7 +29,6 @@ func New(db *database.DB) *Token {
 }
 
 func (t Token) Create(userID int) (string, error) {
-
 	token := t.Generate(lengthToken)
 	currentTime := time.Now()
 
@@ -52,7 +51,6 @@ func (t Token) Generate(length int) string {
 }
 
 func (t *Token) Validate(token string) (bool, *model.Token, error) {
-
 	currentTime := time.Now()
 
 	tokenUser := &model.Token{}

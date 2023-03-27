@@ -40,7 +40,6 @@ func NewAccrual(log *logrus.Logger, cfg *config.Config, db *database.DB, orderRe
 }
 
 func (a accrual) StartWorkers(ctx context.Context, accruar *accrual) {
-
 	accruar.putOrdersWorker(ctx)
 }
 
@@ -69,7 +68,6 @@ func (a accrual) putOrdersWorker(ctx context.Context) {
 }
 
 func (a accrual) makeGetRequest(id string) {
-
 	var body []byte
 	var orderID model.OrderResponseAccrual
 
@@ -98,7 +96,6 @@ func (a accrual) makeGetRequest(id string) {
 }
 
 func (a accrual) checkOrder(orderID model.OrderResponseAccrual) error {
-
 	a.log.Info("Check order")
 	a.log.Info(orderID)
 
