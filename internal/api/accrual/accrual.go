@@ -2,7 +2,9 @@ package accrual
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	_errors "errors"
 	"io"
 	"net/http"
 	"time"
@@ -102,8 +104,11 @@ func (a accrual) checkOrder(orderID model.OrderResponseAccrual) error {
 	a.log.Info("Check order")
 	a.log.Info(orderID)
 
-	o, _ := a.orderRepository.FindByOrderID(orderID.Order)
-	if o == nil {
+	orderUploaded, err := a.orderRepository.FindByOrderID(orderID.Order)
+	if err != nil && !_errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+	if orderUploaded == nil {
 		return errors.ErrNotRegistered
 	}
 
