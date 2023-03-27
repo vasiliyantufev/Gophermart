@@ -1,10 +1,11 @@
 package balance
 
 import (
+	"time"
+
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
 	"github.com/vasiliyantufev/gophermart/internal/storage/errors"
-	"time"
 )
 
 type Balancer interface {
@@ -26,7 +27,6 @@ func New(db *database.DB) *Balance {
 }
 
 func (b *Balance) GetBalance(userID int) (*model.BalanceUserResponse, error) {
-
 	balanceUser := &model.BalanceUserResponse{}
 
 	if err := b.db.Pool.QueryRow("select (sum(accrue) - sum(withdraw)) as current, sum(withdraw) as withdrawn "+
@@ -41,7 +41,6 @@ func (b *Balance) GetBalance(userID int) (*model.BalanceUserResponse, error) {
 }
 
 func (b *Balance) Accrue(userID int, accrualRequest model.OrderResponseAccrual) error {
-
 	var id int
 	return b.db.Pool.QueryRow(
 		"INSERT INTO balance (user_id, order_id, accrue, withdraw, created_at) VALUES ($1, $2, $3, $4, $5) RETURNING id",
@@ -83,7 +82,6 @@ func (b *Balance) WithDraw(userID int, withdrawRequest *model.BalanceWithdraw) e
 }
 
 func (b *Balance) WithDrawals(userID int) ([]model.BalanceWithdrawalsResponse, error) {
-
 	var withdraw model.BalanceWithdrawalsResponse
 	var withdrawals []model.BalanceWithdrawalsResponse
 

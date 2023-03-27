@@ -4,8 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	_errors "errors"
+	"io"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/sirupsen/logrus"
+  
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
@@ -16,11 +24,6 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/token"
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/user"
 	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
-	"io"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type ServerHandlers interface {
@@ -53,7 +56,6 @@ func NewServer(logger *logrus.Logger, cfg *config.Config, db *database.DB, userR
 }
 
 func (s *server) StartServer(r *chi.Mux, cfg *config.Config, log *logrus.Logger) {
-
 	log.Infof("Starting application %v\n", cfg.Address)
 	if con := http.ListenAndServe(cfg.Address, r); con != nil {
 		log.Fatal(con)
@@ -61,9 +63,7 @@ func (s *server) StartServer(r *chi.Mux, cfg *config.Config, log *logrus.Logger)
 }
 
 func (s *server) Route() *chi.Mux {
-
 	r := chi.NewRouter()
-
 	r.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", s.registerHandler)
 		r.Post("/login", s.loginHandler)
@@ -80,7 +80,6 @@ func (s *server) Route() *chi.Mux {
 }
 
 func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
-
 	req := &model.UserRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		s.log.Error(err)
@@ -88,9 +87,9 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := s.userRepository.FindByLogin(req.Login)
+	userLogin, err := s.userRepository.FindByLogin(req.Login)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if _errors.Is(err, sql.ErrNoRows) {
 			s.log.Error("Invalid username")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -100,13 +99,13 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !service.CheckPasswordHash(req.Password, u.Password) {
+	if !service.CheckPasswordHash(req.Password, userLogin.Password) {
 		s.log.Error("Invalid username/password")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	token, err := s.tokenRepository.Create(u.ID)
+	token, err := s.tokenRepository.Create(userLogin.ID)
 	if err != nil {
 		s.log.Error(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -119,7 +118,6 @@ func (s *server) loginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
-
 	req := &model.UserRequest{}
 	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
 		s.log.Error(err)
@@ -139,8 +137,13 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 		Password: hashedPassword,
 	}
 
-	u, _ := s.userRepository.FindByLogin(user.Login)
-	if u != nil {
+	userRegistered, err := s.userRepository.FindByLogin(user.Login)
+	if err != nil && !_errors.Is(err, sql.ErrNoRows) {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if userRegistered != nil {
 		s.log.Error("Login is already taken")
 		w.WriteHeader(http.StatusConflict)
 		return
@@ -166,7 +169,6 @@ func (s *server) registerHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
-
 	resp, err := io.ReadAll(r.Body)
 	if err != nil {
 		s.log.Error(err)
@@ -201,18 +203,30 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt:     timeNow,
 	}
 
-	o, _ := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, userID)
-	if o != nil {
+	orderUploaded, err := s.orderRepository.FindByOrderIDAndUserID(order.OrderID, userID)
+	if err != nil && !_errors.Is(err, sql.ErrNoRows) {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if orderUploaded != nil {
 		s.log.Error("Order number has already been uploaded by this user")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	o, _ = s.orderRepository.FindByOrderID(order.OrderID)
-	if o != nil {
+
+	orderUploaded, err = s.orderRepository.FindByOrderID(order.OrderID)
+	if err != nil && !_errors.Is(err, sql.ErrNoRows) {
+		s.log.Error(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if orderUploaded != nil {
 		s.log.Error("Order number has already been uploaded by another user")
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
+  
 	err = s.orderRepository.Create(order)
 	if err != nil {
 		s.log.Error(err)
@@ -225,9 +239,7 @@ func (s *server) createOrderHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
-
 	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
-
 	orderList, err := s.orderRepository.GetOrders(userID)
 	if err != nil {
 		s.log.Error(err)
@@ -255,9 +267,7 @@ func (s *server) getOrdersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
-
 	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
-
 	balance, err := s.balanceRepository.GetBalance(userID)
 	if err != nil {
 		s.log.Error(err)
@@ -279,7 +289,6 @@ func (s *server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
-
 	withdraw := &model.BalanceWithdraw{}
 	if err := json.NewDecoder(r.Body).Decode(withdraw); err != nil {
 		s.log.Error(err)
@@ -303,7 +312,7 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = s.balanceRepository.CheckBalance(userID, withdraw)
 	if err != nil {
-		if err == errors.ErrNotFunds {
+		if _errors.Is(err, errors.ErrNotFunds) {
 			s.log.Info(err)
 			w.WriteHeader(http.StatusOK)
 			return
@@ -325,9 +334,7 @@ func (s *server) createWithdrawHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
-
 	userID := r.Context().Value(Ctx("UserIDCtx")).(int)
-
 	withDrawals, err := s.balanceRepository.WithDrawals(userID)
 	if withDrawals == nil {
 		s.log.Error("No write-offs")
@@ -354,9 +361,7 @@ func (s *server) getWithdrawalsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) authMiddleware(next http.Handler) http.Handler {
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 		token := r.Header.Get("Authorization")
 		if token == "" {
 			s.log.Error("Token missing")

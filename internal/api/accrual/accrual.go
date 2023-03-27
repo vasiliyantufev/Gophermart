@@ -3,8 +3,13 @@ package accrual
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"net/http"
+	"time"
+
 	"github.com/go-resty/resty/v2"
 	"github.com/sirupsen/logrus"
+
 	"github.com/vasiliyantufev/gophermart/internal/config"
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
@@ -12,9 +17,6 @@ import (
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/balance"
 	"github.com/vasiliyantufev/gophermart/internal/storage/repositories/order"
 	"github.com/vasiliyantufev/gophermart/internal/storage/statuses"
-	"io"
-	"net/http"
-	"time"
 )
 
 type Accruer interface {
@@ -38,7 +40,6 @@ func NewAccrual(log *logrus.Logger, cfg *config.Config, db *database.DB, orderRe
 }
 
 func (a accrual) StartWorkers(ctx context.Context, accruar *accrual) {
-
 	accruar.putOrdersWorker(ctx)
 }
 
@@ -67,7 +68,6 @@ func (a accrual) putOrdersWorker(ctx context.Context) {
 }
 
 func (a accrual) makeGetRequest(id string) {
-
 	var body []byte
 	var orderID model.OrderResponseAccrual
 
@@ -96,7 +96,6 @@ func (a accrual) makeGetRequest(id string) {
 }
 
 func (a accrual) checkOrder(orderID model.OrderResponseAccrual) error {
-
 	a.log.Info("Check order")
 	a.log.Info(orderID)
 

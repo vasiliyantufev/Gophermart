@@ -1,9 +1,10 @@
 package user
 
 import (
+	"time"
+
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
-	"time"
 )
 
 type Constructor interface {
@@ -37,7 +38,6 @@ func (u *User) Create(user *model.User) (int, error) {
 }
 
 func (u *User) FindByID(id int) (*model.User, error) {
-
 	user := &model.User{}
 
 	if err := u.db.Pool.QueryRow("SELECT * FROM users where id=$1", id).Scan(
@@ -53,7 +53,6 @@ func (u *User) FindByID(id int) (*model.User, error) {
 }
 
 func (u *User) FindByLogin(login string) (*model.User, error) {
-
 	user := &model.User{}
 
 	if err := u.db.Pool.QueryRow("SELECT * FROM users where login=$1", login).Scan(

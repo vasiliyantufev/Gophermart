@@ -3,9 +3,10 @@ package token
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"time"
+
 	database "github.com/vasiliyantufev/gophermart/internal/db"
 	"github.com/vasiliyantufev/gophermart/internal/model"
-	"time"
 )
 
 const lengthToken = 32
@@ -28,7 +29,6 @@ func New(db *database.DB) *Token {
 }
 
 func (t Token) Create(userID int) (string, error) {
-
 	token := t.Generate(lengthToken)
 	currentTime := time.Now()
 
@@ -51,7 +51,6 @@ func (t Token) Generate(length int) string {
 }
 
 func (t *Token) Validate(token string) (bool, *model.Token, error) {
-
 	currentTime := time.Now()
 
 	tokenUser := &model.Token{}
